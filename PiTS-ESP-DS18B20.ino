@@ -5,7 +5,7 @@
  * Temperaturerfassung mit DS18B20-Sensor und benötigt folgende Libraries:  *
  *  WiFi, NTP, Time, OneWire, DallasTemperature                             *
  *                                                                          *
- * Die Übertragung des Zählimpuls erfolgt per HTTP-Get Request an das       *
+ * Die Übertragung des Messwerte erfolgt per HTTP-Get Request an das        *
  * Webserver Modul von PiTS-It!                                             *
  *                                                                          *
  * Homepage: http://pits.TGD-Consulting.de                                  *
@@ -25,7 +25,7 @@
 #define NTP_SERVER              "192.168.0.1"            // set your local NTP-Server here, or eg. "ptbtime2.ptb.de"
 #define PITS_HOST               "192.168.0.25"           // PiTS-It! Webserver
 #define PITS_PORT               8080                     // Port des Webservers
-#define ZAEHLER_ID              "123456789"              // eindeutige ID des Zählersensors
+#define ZAEHLER_ID              "123456789"              // eindeutige ID des Sensors
 #define TOKEN                   "000000453c67f0"         // Verbindungstoken (Seriennummer des RPi)
 #define PST +1           // MESZ
 #define SERDEBUG 1       // Debug-Infos über Serielle Schnittstelle senden, bei 0 Debugging OFF  
@@ -104,7 +104,9 @@ void loop() {
       DateTimeString = DateTimeString + "/" + String(hour(t),DEC) + ":" + String(minute(t),DEC) + ":" + String(second(t),DEC);
 
 #ifdef SERDEBUG
-    Serial.print("impulse detected @ ");
+    Serial.print("current temperature ");
+    Serial.println(temp);       
+    Serial.print("maessured @ ");
     Serial.println(DateTimeString);
     Serial.print("connecting to ");
     Serial.println(PITS_HOST);
