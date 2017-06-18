@@ -72,8 +72,6 @@ void setup() {
    setSyncInterval(SECS_PER_HOUR);
    setSyncProvider(getNTPtime);
 
-   pinMode(GPIO_INPUT, INPUT_PULLUP); 
-
    delay(1000);  // nach dem Start 1 Sekunden Zeit, für NTP-Synchronisation
 
 }
