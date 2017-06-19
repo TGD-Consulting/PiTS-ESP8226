@@ -1,17 +1,22 @@
 /****************************************************************************
- * PiTS-ESP8266 Modul                                                       *
- * ==================                                                       *
+ * PiTS-ESP8266-DS18B20 Modul                                               *
+ * ==========================                                               *
  * Dieser Sketch für den ESP8266 dient als remote Sensor für PiTS-It! zur   *
  * Temperaturerfassung mit DS18B20-Sensor und benötigt folgende Libraries:  *
- *  WiFi, NTP, Time, OneWire, DallasTemperature                             *
+ *   WiFi (Bestandteil der Arduino IDE),                                    *
+ *   NTP (https://github.com/chrismelba/NTP),                               *
+ *   Time (https://github.com/PaulStoffregen/Time),                         *
+ *   OneWire (https://github.com/PaulStoffregen/OneWire)                    *
+ *   DallasTemperature (https://github.com/milesburton/                     *
+ *                               Arduino-Temperature-Control-Library)       *
  *                                                                          *
  * Die Übertragung des Messwerte erfolgt per HTTP-Get Request an das        *
  * Webserver Modul von PiTS-It!                                             *
  *                                                                          *
  * Homepage: http://pits.TGD-Consulting.de                                  *
  *                                                                          *
- * Version 0.1.1                                                            *
- * Datum 26.05.2017                                                         *
+ * Version 0.1.2                                                            *
+ * Datum 19.06.2017                                                         *
  *                                                                          *
  * (C) 2017 TGD-Consulting , Author: Dirk Weyand                            *
  ****************************************************************************/ 
@@ -34,10 +39,10 @@
 #define MINUTEN 10       // Abtastrate, Anzahl Minuten bis zur nächsten Datenübermittlung
 
 // include requiered library header
-#include <ntp.h>
 #include <ESP8266WiFi.h> // WiFi functionality
 #include <WiFiUdp.h>     // udp for network time
 #include <Time.h>
+#include <ntp.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
@@ -69,8 +74,8 @@ void setup() {
 #endif
 
    NTPclient.begin(NTP_SERVER, PST);
-   setSyncInterval(SECS_PER_HOUR);
    setSyncProvider(getNTPtime);
+   setSyncInterval(SECS_PER_HOUR);
 
    delay(1000);  // nach dem Start 1 Sekunden Zeit, für NTP-Synchronisation
 
@@ -78,7 +83,7 @@ void setup() {
 
 void loop() {
     float temp;
-    int loopCount;
+    int loopCount, Intervall;
     Intervall = MINUTEN*60*1000;
 
     // DS18B20 Sensor auslesen
