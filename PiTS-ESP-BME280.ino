@@ -6,6 +6,7 @@
  *   WiFi (Bestandteil der Arduino IDE),                                    *
  *   NTP (https://github.com/chrismelba/NTP),                               *
  *   Time (https://github.com/PaulStoffregen/Time),                         *
+ *   Timezone (https://github.com/JChristensen/Timezone),                   *
  *   Adafruit_BME280 (https://github.com/adafruit/Adafruit_BME280_Library), *
  *   Adafruit_Sensors (https://github.com/adafruit/Adafruit_Sensor)         *
  *                                                                          *
@@ -14,7 +15,7 @@
  *                                                                          *
  *  Homepage: http://pits.TGD-Consulting.de                                 *
  *                                                                          *
- *  Version 0.1.1                                                           *
+ *  Version 0.1.2                                                           *
  *  Datum 19.06.2017                                                        *
  *                                                                          *
  *  (C) 2017 TGD-Consulting , Author: Dirk Weyand                           *
@@ -31,7 +32,7 @@
 #define PITS_PORT               8080                     // Port des Webservers
 #define ZAEHLER_ID              "123456789"              // eindeutige ID des Sensors
 #define TOKEN                   "000000453c67f0"         // Verbindungstoken (Seriennummer des RPi)
-#define PST +1           // MESZ
+#define PST 0            // GMT/UTC - Anpassung an lokale Sommer/Winterzeit erfolgt über Timezone Library
 #define SERDEBUG 1       // Debug-Infos über Serielle Schnittstelle senden, bei 0 Debugging OFF  
 #define GPIO_I2C_SDA 4   // Verwende GPIO4 als I2C SDA (Input)
 #define GPIO_I2C_SCL 5   // Verwende GPIO5 als I2C SCL
@@ -41,6 +42,7 @@
 #include <ESP8266WiFi.h> // WiFi functionality
 #include <WiFiUdp.h>     // udp for network time
 #include <TimeLib.h>
+#include <Timezone.h>    // Anpassung an lokale Zeitzone
 #include <ntp.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BME280.h>
@@ -51,6 +53,13 @@ time_t getNTPtime(void);
 
 Adafruit_BME280 bme; // Note Adafruit assumes I2C adress = 0x77 my module (eBay) uses 0x76 so the library address has been changed accordingly in Adafruit_BME280.h
 NTP NTPclient;
+
+//Central European Time (Berlin, Paris)
+TimeChangeRule CEST = {"CEST", Last, Sun, Mar, 2, 120};    //Central European Summer Time = UTC + 2 hours
+TimeChangeRule CET = {"CET", Last, Sun, Oct, 3, 60};       //Central European Standard Time = UTC + 1 hours
+Timezone CE(CEST, CET);
+
+TimeChangeRule *tcr;        //pointer to the time change rule, use to get TZ abbrev
 
 void setup() {
 #ifdef SERDEBUG
@@ -102,7 +111,7 @@ void setup() {
 
 #ifdef SERDEBUG
   Serial.println("WiFi connected");
-  Serial.println("IP address: ");
+  Serial.print("WIFI >> IP address: ");
   Serial.println(WiFi.localIP());
 #endif
 
@@ -136,7 +145,8 @@ void loop() {
 #endif
 
   // Werte des BME280 Sensors ausgelesen => Signalisierung an PITS-Server
-  time_t t = now();                      // Store the current time in time variable t
+  time_t t = CE.toLocal(now(), &tcr);      // Store the current local time in time variable t
+//  time_t t = now();                      // Store the current time in time variable t
   String DateTimeString = String(day(t), DEC) + "-" + String(month(t), DEC) + "-" + String(year(t), DEC);
   DateTimeString = DateTimeString + "/" + String(hour(t), DEC) + ":" + String(minute(t), DEC) + ":" + String(second(t), DEC);
 
@@ -220,7 +230,7 @@ bool startWiFi(void)
 #endif
     for (i = 0; i < 10; i++) {
       if (WiFi.status() == WL_CONNECTED) return true;
-      delay(500);
+      delay(600);
 #ifdef SERDEBUG
       Serial.print(".");
 #endif
