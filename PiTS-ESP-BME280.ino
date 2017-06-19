@@ -15,7 +15,7 @@
  *                                                                          *
  *  Homepage: http://pits.TGD-Consulting.de                                 *
  *                                                                          *
- *  Version 0.1.2                                                           *
+ *  Version 0.1.3                                                           *
  *  Datum 19.06.2017                                                        *
  *                                                                          *
  *  (C) 2017 TGD-Consulting , Author: Dirk Weyand                           *
@@ -73,7 +73,7 @@ void setup() {
   Serial.println("PROG >> DATE >> " __DATE__ );
   Serial.println("PROG >> TIME >> " __TIME__ );
   Serial.println("PROG >> GCC  >> " __VERSION__ );
-  //   Serial.println(String("PROG >> IDE  >> ") + IDEString() );
+  Serial.println(String("PROG >> IDE  >> ") + IDEString() );
   Serial.println("CHIP INFORMATION =========================================================");
   Serial.printf("CHIP >> CORE  >> ID: %08X\r\n", ESP.getChipId());
   Serial.println(String("CHIP >> CORE  >> Free Heap: ") + ESP.getFreeHeap() / 1024 + " kB");
@@ -195,6 +195,19 @@ void loop() {
                "Connection: close\r\n\r\n");
 
   delay(Intervall); // Abstand zwischen den Messungen
+}
+
+String IDEString(){
+  uint16_t IDE = ARDUINO;
+  String tmp = "";
+  tmp += String(IDE/10000);
+  IDE %= 10000;
+  tmp += ".";
+  tmp += String(IDE/100);
+  IDE %= 100;
+  tmp += ".";
+  tmp += String(IDE);
+  return tmp;
 }
 
 #define NTP_RETRIES 3 // Anzahl Versuche, die Uhrzeit vom NTP zu bekommen
