@@ -41,7 +41,7 @@
 // include requiered library header
 #include <ESP8266WiFi.h> // WiFi functionality
 #include <WiFiUdp.h>     // udp for network time
-#include <Time.h>
+#include <TimeLib.h>
 #include <ntp.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
