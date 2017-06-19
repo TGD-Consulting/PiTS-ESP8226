@@ -34,8 +34,8 @@
 #define TOKEN                   "000000453c67f0"         // Verbindungstoken (Seriennummer des RPi)
 #define PST 0            // GMT/UTC - Anpassung an lokale Sommer/Winterzeit erfolgt über Timezone Library
 #define SERDEBUG 1       // Debug-Infos über Serielle Schnittstelle senden, bei 0 Debugging OFF  
-#define GPIO_I2C_SDA 4   // Verwende GPIO4 als I2C SDA (Input)
-#define GPIO_I2C_SCL 5   // Verwende GPIO5 als I2C SCL
+#define GPIO_I2C_SDA 0   // Verwende GPIO0 als I2C SDA (Input)
+#define GPIO_I2C_SCL 2   // Verwende GPIO2 als I2C SCL
 #define MINUTEN 10       // Abtastrate, Anzahl Minuten bis zur nächsten Datenübermittlung
 
 // include requiered library header
@@ -84,10 +84,10 @@ void setup() {
   Serial.println("RUNTIME INFORMATION========================================================");
 #endif
 
-  pinMode(GPIO_I2C_SDA, INPUT_PULLUP); // Set input (SDA) pull-up resistor on
+  //pinMode(GPIO_I2C_SDA, INPUT_PULLUP); // Set input (SDA) pull-up resistor on
 
   // Open I2C Bus on defined Pins
-  Wire.begin(GPIO_I2C_SDA, GPIO_I2C_SCL);
+  Wire.begin(GPIO_I2C_SDA, GPIO_I2C_SCL); //sda 0 , scl 2
 #ifdef SERDEBUG
   Serial.println("I2C  >> I2C-Bus initialized!");
 #endif
