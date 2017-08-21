@@ -6,6 +6,7 @@
  *   WiFi (Bestandteil der Arduino IDE),                                    *
  *   NTP (https://github.com/chrismelba/NTP),                               *
  *   Time (https://github.com/PaulStoffregen/Time),                         *
+ *   Timezone (https://github.com/JChristensen/Timezone)                    *
  *   OneWire (https://github.com/PaulStoffregen/OneWire)                    *
  *   DallasTemperature (https://github.com/milesburton/                     *
  *                               Arduino-Temperature-Control-Library)       *
@@ -15,8 +16,8 @@
  *                                                                          *
  * Homepage: http://pits.TGD-Consulting.de                                  *
  *                                                                          *
- * Version 0.1.2                                                            *
- * Datum 19.06.2017                                                         *
+ * Version 0.2.0                                                            *
+ * Datum 21.08.2017                                                         *
  *                                                                          *
  * (C) 2017 TGD-Consulting , Author: Dirk Weyand                            *
  ****************************************************************************/ 
@@ -32,8 +33,8 @@
 #define PITS_PORT               8080                     // Port des Webservers
 #define ZAEHLER_ID              "123456789"              // eindeutige ID des Sensors
 #define TOKEN                   "000000453c67f0"         // Verbindungstoken (Seriennummer des RPi)
-#define PST +1           // MESZ
-#define SERDEBUG 1       // Debug-Infos über Serielle Schnittstelle senden, bei 0 Debugging OFF  
+#define PST 0            // GMT/UTC - Anpassung an lokale Sommer/Winterzeit erfolgt über Timezone Library
+#define SERDEBUG 1       // Debug-Infos über Serielle Schnittstelle senden, auskommentiert = Debugging OFF  
 #define ONE_WIRE_BUS 5   // DS18B20 an GPIO 5
 #define MAX_TRIES 5      // maximal fünf Versuche zum Auslesen des DS18B20
 #define MINUTEN 10       // Abtastrate, Anzahl Minuten bis zur nächsten Datenübermittlung
@@ -54,13 +55,35 @@ OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature DS18B20(&oneWire);
 NTP NTPclient;
 
+//Central Europe Time (Berlin, Paris)
+TimeChangeRule CEST = {"CEST", Last, Sun, Mar, 2, 120};    //Central European Summer Time = UTC + 2 hours
+TimeChangeRule CET = {"CET", Last, Sun, Oct, 3, 60};       //Central European Standard Time = UTC + 1 hours
+Timezone CE(CEST, CET);
+
+TimeChangeRule *tcr;        //pointer to the time change rule, use to get TZ abbrev
+
 void setup() {
 #ifdef SERDEBUG
    Serial.begin(115200);
    delay(10);
    Serial.println();
    Serial.println();
-   Serial.println("PiTS-ESP8266");
+   Serial.println("PROG INFORMATION =========================================================");
+   Serial.println("PROG >> INFO >> PiTS-ESP8266 with DS18B20");
+   Serial.println("PROG >> ID   >> " ZAEHLER_ID );
+   Serial.println("PROG >> DATE >> " __DATE__ );
+   Serial.println("PROG >> TIME >> " __TIME__ );
+   Serial.println("PROG >> GCC  >> " __VERSION__ );
+   Serial.println(String("PROG >> IDE  >> ") + IDEString() );
+   Serial.println("CHIP INFORMATION =========================================================");
+   Serial.printf("CHIP >> CORE  >> ID: %08X\r\n", ESP.getChipId());
+   Serial.println(String("CHIP >> CORE  >> Free Heap: ") + ESP.getFreeHeap() / 1024 + " kB");
+   Serial.println("CHIP >> CORE  >> Speed: 80 MHz");
+   Serial.printf("CHIP >> FLASH >> ID : %08X\r\n", ESP.getFlashChipId());
+   Serial.println(String("CHIP >> FLASH >> Size: ") + ESP.getFlashChipRealSize() / 1024 + " kB");
+   Serial.println(String("CHIP >> FLASH >> Speed: ") + ESP.getFlashChipSpeed() / 1000000 + " MHz");
+   Serial.println("RUNTIME INFORMATION========================================================");
+   Serial.print("PITS >> SENSOR >> ID ");
    Serial.println(ZAEHLER_ID);
 #endif
 
@@ -69,7 +92,7 @@ void setup() {
 
 #ifdef SERDEBUG  
    Serial.println("WiFi connected");
-   Serial.println("IP address: ");
+   Serial.print("WIFI >> IP address: ");
    Serial.println(WiFi.localIP());
 #endif
 
@@ -84,7 +107,7 @@ void setup() {
 void loop() {
     float temp;
     int loopCount, Intervall;
-    Intervall = MINUTEN*60*1000;
+    Intervall = MINUTEN * 60 * 1000;
 
     // DS18B20 Sensor auslesen
     do
@@ -94,7 +117,7 @@ void loop() {
        delay(1000); // Pause, damit der ermittelte Wert im Eeprom des DS18B20 abgelegt werden kann
        temp = DS18B20.getTempCByIndex(0);
 #ifdef SERDEBUG  
-       Serial.print("Temperature: ");
+       Serial.print("1Wire>> DS18B20>> Temperature: ");
        Serial.println(temp);
 #endif
     } while( temp == 85.0 && loopCount++ < MAX_TRIES );
@@ -102,16 +125,16 @@ void loop() {
     if( temp != 85.0 )
     {
       // Temperatur ausgelesen => Signalisierung an PITS-Server
-      time_t t = now();                      // Store the current time in time variable t 
+      time_t t = CE.toLocal(now(), &tcr); //now();                      // Store the current time in time variable t
       String DateTimeString = String(day(t),DEC) + "-" + String(month(t),DEC) + "-" + String(year(t),DEC);
       DateTimeString = DateTimeString + "/" + String(hour(t),DEC) + ":" + String(minute(t),DEC) + ":" + String(second(t),DEC);
 
 #ifdef SERDEBUG
-    Serial.print("current temperature ");
-    Serial.println(temp);       
-    Serial.print("maessured @ ");
+    Serial.print("PITS >> SENSOR >> current temperature ");
+    Serial.println(temp);
+    Serial.print("PITS >> SENSOR >> maessured @ ");
     Serial.println(DateTimeString);
-    Serial.print("connecting to ");
+    Serial.print("PITS >> HTTP   >> connecting to ");
     Serial.println(PITS_HOST);
 #endif
 
@@ -119,7 +142,7 @@ void loop() {
     WiFiClient client;
     if (!client.connect(PITS_HOST, PITS_PORT)) {
 #ifdef SERDEBUG
-       Serial.println("connection failed");
+    Serial.println("PITS >> HTTP   >> connection failed");
 #endif
        return;
     }
@@ -131,13 +154,15 @@ void loop() {
     url += TOKEN;
     url += "&data=";
     url += temp;
+    url += "&run=";
+    url += uptime();
     if (timeStatus() != timeNotSet){ // Falls Zeit synchron zum NTP-Server, Zeitpunkt übermitteln
        url += "&time=";
        url += DateTimeString;        // im REBOL Time-Format
     }
 
 #ifdef SERDEBUG  
-    Serial.print("Requesting URL: ");
+    Serial.print("PITS >> HTTP   >> Requesting URL: ");
     Serial.println(url);
 #endif
   
@@ -147,6 +172,41 @@ void loop() {
                 "Connection: close\r\n\r\n");
     }
     delay(Intervall); // Abstand zwischen den Messungen
+}
+
+String uptime()
+{
+  //long days = 0;
+  long hours = 0;
+  long mins = 0;
+  long secs = 0;
+  secs = millis () / 1000;     // convert current milliseconds from ESP to seconds
+  mins = secs / 60;            // convert seconds to minutes
+  hours = mins / 60;           // convert minutes to hours
+  //days = hours / 24;           // convert hours to days
+  secs = secs - (mins * 60);
+  mins = mins - (hours * 60);
+  //hours = hours - (days * 24);
+  String rc = "";
+  rc += String(hours);
+  rc += ":";
+  rc += String(mins);
+  rc += ":";
+  rc += String(secs); 
+  return rc;
+}
+
+String IDEString(){
+  uint16_t IDE = ARDUINO;
+  String tmp = "";
+  tmp += String(IDE/10000);
+  IDE %= 10000;
+  tmp += ".";
+  tmp += String(IDE/100);
+  IDE %= 100;
+  tmp += ".";
+  tmp += String(IDE);
+  return tmp;
 }
 
 #define NTP_RETRIES 3 // Anzahl Versuche, die Uhrzeit vom NTP zu bekommen
@@ -167,7 +227,7 @@ bool startWiFi(void)
    uint8_t i;
 
 #ifdef SERDEBUG
-   Serial.print("Attempting to Connect to ");
+   Serial.print("WIFI >> Attempting to connect to ");
    Serial.print(WLAN_SSID);
    Serial.print(" using password ");
    Serial.println(WLAN_PASSPHRASE);
@@ -177,9 +237,12 @@ bool startWiFi(void)
    WiFi.mode(WIFI_STA);    // Explicitly set the ESP8266 to be a WiFi-client
 
    if (WiFi.begin(WLAN_SSID, WLAN_PASSPHRASE) != WL_CONNECTED) {
+#ifdef SERDEBUG
+      Serial.print("WIFI >> ");
+#endif
       for (i=0;i<10;i++){
         if (WiFi.status() == WL_CONNECTED) return true;
-        delay(500);
+        delay(600);
 #ifdef SERDEBUG
         Serial.print(".");
 #endif
@@ -190,7 +253,7 @@ bool startWiFi(void)
    Serial.print("Failed to connect to: ");
    Serial.println(WLAN_SSID);
   
-   Serial.print("using pass phrase: ");
+   Serial.print("WIFI >> using pass phrase: ");
    Serial.println(WLAN_PASSPHRASE);
 #endif
 
