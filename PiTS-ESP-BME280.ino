@@ -82,6 +82,8 @@ void setup() {
   Serial.println(String("CHIP >> FLASH >> Size: ") + ESP.getFlashChipRealSize() / 1024 + " kB");
   Serial.println(String("CHIP >> FLASH >> Speed: ") + ESP.getFlashChipSpeed() / 1000000 + " MHz");
   Serial.println("RUNTIME INFORMATION========================================================");
+  Serial.print("PITS >> SENSOR >> ID ");
+  Serial.println(ZAEHLER_ID);
 #endif
 
   //pinMode(GPIO_I2C_SDA, INPUT_PULLUP); // Set input (SDA) pull-up resistor on
