@@ -15,8 +15,8 @@
  *                                                                          *
  *  Homepage: http://pits.TGD-Consulting.de                                 *
  *                                                                          *
- *  Version 0.1.3                                                           *
- *  Datum 19.06.2017                                                        *
+ *  Version 0.2.0                                                           *
+ *  Datum 21.08.2017                                                        *
  *                                                                          *
  *  (C) 2017 TGD-Consulting , Author: Dirk Weyand                           *
  ****************************************************************************/
@@ -33,7 +33,7 @@
 #define ZAEHLER_ID              "123456789"              // eindeutige ID des Sensors
 #define TOKEN                   "000000453c67f0"         // Verbindungstoken (Seriennummer des RPi)
 #define PST 0            // GMT/UTC - Anpassung an lokale Sommer/Winterzeit erfolgt über Timezone Library
-#define SERDEBUG 1       // Debug-Infos über Serielle Schnittstelle senden, bei 0 Debugging OFF  
+#define SERDEBUG 1       // Debug-Infos über Serielle Schnittstelle senden, auskommentiert = Debugging OFF  
 #define GPIO_I2C_SDA 0   // Verwende GPIO0 als I2C SDA (Input)
 #define GPIO_I2C_SCL 2   // Verwende GPIO2 als I2C SCL
 #define MINUTEN 10       // Abtastrate, Anzahl Minuten bis zur nächsten Datenübermittlung
@@ -85,7 +85,8 @@ void setup() {
 #endif
 
   //pinMode(GPIO_I2C_SDA, INPUT_PULLUP); // Set input (SDA) pull-up resistor on
-
+  //  use real hardware pull-up 4k7-resistor instead !!!
+  
   // Open I2C Bus on defined Pins
   Wire.begin(GPIO_I2C_SDA, GPIO_I2C_SCL); //sda 0 , scl 2
 #ifdef SERDEBUG
@@ -94,7 +95,7 @@ void setup() {
   delay(1500);  // and give BME280 time to boot
 
   // Init BME280 on I2C
-  if (!bme.begin()) {
+  if (!bme.begin(0x76)) {
 #ifdef SERDEBUG
     Serial.println("I2C  >> I2C-No Sensor detected!");
 #endif
@@ -179,6 +180,8 @@ void loop() {
   url += pressure;
   url += ";";
   url += humidity;
+  url += "&run=";
+  url += uptime();
   if (timeStatus() != timeNotSet) { // Falls Zeit synchron zum NTP-Server, Zeitpunkt übermitteln
     url += "&time=";
     url += DateTimeString;        // im REBOL Time-Format
@@ -195,6 +198,28 @@ void loop() {
                "Connection: close\r\n\r\n");
 
   delay(Intervall); // Abstand zwischen den Messungen
+}
+
+String uptime()
+{
+  //long days = 0;
+  long hours = 0;
+  long mins = 0;
+  long secs = 0;
+  secs = millis () / 1000;     // convert current milliseconds from ESP to seconds
+  mins = secs / 60;            // convert seconds to minutes
+  hours = mins / 60;           // convert minutes to hours
+  //days = hours / 24;           // convert hours to days
+  secs = secs - (mins * 60);
+  mins = mins - (hours * 60);
+  //hours = hours - (days * 24);
+  String rc = "";
+  rc += String(hours);
+  rc += ":";
+  rc += String(mins);
+  rc += ":";
+  rc += String(secs); 
+  return rc;
 }
 
 String IDEString(){
