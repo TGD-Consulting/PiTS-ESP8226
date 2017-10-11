@@ -61,6 +61,8 @@ Timezone CE(CEST, CET);
 
 TimeChangeRule *tcr;        //pointer to the time change rule, use to get TZ abbrev
 
+ADC_MODE(ADC_VCC);          // Aktiviert Spannungsabfrage
+
 void setup() {
 #ifdef SERDEBUG
   Serial.begin(115200);
@@ -78,6 +80,7 @@ void setup() {
   Serial.printf("CHIP >> CORE  >> ID: %08X\r\n", ESP.getChipId());
   Serial.println(String("CHIP >> CORE  >> Free Heap: ") + ESP.getFreeHeap() / 1024 + " kB");
   Serial.println("CHIP >> CORE  >> Speed: 80 MHz");
+  Serial.println(String("CHIP >> CORE  >> Voltage: ") + ESP.getVcc() / 1000.0f + " V");
   Serial.printf("CHIP >> FLASH >> ID : %08X\r\n", ESP.getFlashChipId());
   Serial.println(String("CHIP >> FLASH >> Size: ") + ESP.getFlashChipRealSize() / 1024 + " kB");
   Serial.println(String("CHIP >> FLASH >> Speed: ") + ESP.getFlashChipSpeed() / 1000000 + " MHz");
