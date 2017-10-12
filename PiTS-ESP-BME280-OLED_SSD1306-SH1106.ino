@@ -42,7 +42,7 @@
 //#define NOCLOCK 1      // Für Darstellung der Uhr in der UI diese Zeile // auskommentieren
 #define GPIO_I2C_SDA 0   // Verwende GPIO4 als I2C SDA (Input)
 #define GPIO_I2C_SCL 2   // Verwende GPIO5 als I2C SCL
-#define MINUTEN 5       // Abtastrate, Anzahl Minuten bis zur nächsten Datenübermittlung
+#define MINUTEN 5        // Abtastrate, Anzahl Minuten bis zur nächsten Datenübermittlung
 
 // include requiered library header
 #include <ESP8266WiFi.h> // WiFi functionality
