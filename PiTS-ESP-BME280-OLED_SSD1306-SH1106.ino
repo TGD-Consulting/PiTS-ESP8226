@@ -53,8 +53,8 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BME280.h>
 #include <Wire.h>        // fuer Ausgbabe auf I2C OLED-LED & auslesen des BME280 
-//#include "SH1106.h"      // fuer Ausgabe auf 1,3" I2C                                                                                                                                                  OLED
-#include "SSD1306.h"     // fuer Ausgbabe auf I2C OLED-LED
+//#include "SH1106.h"      // fuer Ausgabe auf 1,3" I2C OLED-Display                                                                                                                                                 OLED
+#include "SSD1306.h"     // fuer Ausgbabe auf I2C OLED-Display
 #include "OLEDDisplayUi.h" // Include the UI lib
 
 // function pre declaration 2 avoid errors
@@ -236,12 +236,12 @@ void drawAbsHum(OLEDDisplay *display, OLEDDisplayUiState* state, int16_t x, int1
      display->setFont(ArialMT_Plain_10);
      display->drawString(64 + x, 22 + y, "absolute Feuchte");
      display->setFont(ArialMT_Plain_24);
-     display->drawString(64 + x, 32 + y, String(stringbuf) + " g/m3");
+     display->drawString(64 + x, 32 + y, String(stringbuf) + " g/m³");
   } else {
      display->setFont(ArialMT_Plain_16);
      display->drawString(64 + x, 20 + y, "absolute Feuchte:");
      display->setFont(ArialMT_Plain_16);
-     display->drawString(64 + x, 36 + y, String(stringbuf) + " g/m3");
+     display->drawString(64 + x, 36 + y, String(stringbuf) + " g/m³");
   }
 }
 
