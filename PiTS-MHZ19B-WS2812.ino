@@ -15,8 +15,8 @@
  *                                                                          *
  *  Homepage: http://pits.TGD-Consulting.de                                 *
  *                                                                          *
- *  Version 0.1.0                                                           *
- *  Datum 19.09.2020                                                        *
+ *  Version 0.2.0                                                           *
+ *  Datum 20.09.2020                                                        *
  *                                                                          *
  *  (C) 2020 TGD-Consulting , Author: Dirk Weyand                           *
  ****************************************************************************/
@@ -52,6 +52,7 @@ bool startWiFi(void);
 time_t getNTPtime(void);
 
 uint8_t count;  // Zähler für WiFi-Connect Versuche
+int co2 = 400;  // bisheriger co2 Messwert
 
 Adafruit_NeoPixel leds(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800); // Adafruit_NeoPixel Library setup
 NTP NTPclient;
@@ -128,23 +129,23 @@ void setup() {
   leds.setBrightness(255); //die Helligkeit ganz hell
   leds.show();
   delay(500);  // warte 500ms
-  leds.setPixelColor(1, leds.Color(255, 0, 0)); // Farbe Rot setzen
+  leds.setPixelColor(0, leds.Color(255, 0, 0)); // Farbe Rot setzen
   leds.show(); //Anzeigen
   delay(1000); // warte 1s
-  leds.setPixelColor(1, leds.Color(255, 255, 204)); // Farbe Gelb setzen
+  leds.setPixelColor(0, leds.Color(255, 255, 0)); // Farbe Gelb setzen
   leds.show(); //Anzeigen
   delay(1000); // warte 1s
-  leds.setPixelColor(1, leds.Color(0, 255, 0)); // Farbe Grün setzen
+  leds.setPixelColor(0, leds.Color(0, 255, 0)); // Farbe Grün setzen
   leds.show(); //Anzeigen
   delay(1000); // warte 1s
   leds.clear();            // alle LEDs ausschalten
 }
 
 void loop() {
-  uint32_t ID4 = leds.Color(255, 0, 0); //RGB Farbe Rot
   uint32_t ID1 = leds.Color(0, 255, 0); //RGB Farbe Grün
-  uint32_t ID2 = leds.Color(255, 255, 204); //RGB Farbe Gelb
-  int co2;
+  uint32_t ID2 = leds.Color(0, 255, 0); //RGB Farbe Hellgrün
+  uint32_t ID3 = leds.Color(255, 255, 0); //RGB Farbe Gelb
+  uint32_t ID4 = leds.Color(255, 0, 0); //RGB Farbe Rot
   Intervall = MINUTEN * 60 * 1000;
 
   // MH-Z19B Sensor auslesen
@@ -152,18 +153,21 @@ void loop() {
 
   // CO2-Ampel
   if(co2 > 1900){   // ID4 sehr niedrig => rot blinken
-    leds.setPixelColor(1, ID4); // Farbe Rot setzen
+    for (int i = 0; i <= 4; i++) {
+      FadeOutIn (0x00, 0xFF, 0x00); // Farbe Rot Fade out/Fade in
+      delay(1000); // warte 1s
+    }
   } else {
     if(co2 > 1400){ // ID4 niedrig => rot
-      leds.setPixelColor(1, ID4); // Farbe Rot setzen
+      leds.setPixelColor(0, ID4); // Farbe Rot setzen
     } else {
       if(co2 >= 1000){ // ID3 mäßig => gelb
-        leds.setPixelColor(1, ID3); // Farbe Gelb setzen
+        leds.setPixelColor(0, ID3); // Farbe Gelb setzen
       } else {
         if(co2 >= 800){ // ID2 mittel => hellgrün 
-          leds.setPixelColor(1, ID1); // Farbe Grün setzen
+          leds.setPixelColor(0, ID2); // Farbe Grün setzen
         } else {        // ID1 gut => grün
-          leds.setPixelColor(1, ID1); // Farbe Grün setzen
+          leds.setPixelColor(0, ID1); // Farbe Grün setzen
         }
       }
     }
@@ -214,6 +218,26 @@ void loop() {
   delay(Intervall); // Abstand zwischen den Messungen
 }
 
+void FadeOutIn (byte red, byte green, byte blue){
+  float r, g, b;
+
+  for(int k = 255; k >= 0; k=k-2) {
+    r = (k/256.0)*red;
+    g = (k/256.0)*green;
+    b = (k/256.0)*blue;
+    leds.setPixelColor(0, (int) r,(int) g, (int) b);
+    leds.show();
+  }
+      
+  for(int k = 0; k < 256; k=k+1) { 
+    r = (k/256.0)*red;
+    g = (k/256.0)*green;
+    b = (k/256.0)*blue;
+    leds.setPixelColor(0, (int) r,(int) g, (int) b);
+    leds.show();
+  }
+}
+
 int co2ppm() {
   static byte cmd[9] = {0xFF, 0x01, 0x86, 0x00, 0x00, 0x00, 0x00, 0x00, 0x79};
   static byte response[9] = {0};
@@ -227,10 +251,17 @@ int co2ppm() {
 
   Serial.readBytes(response, 9);
 
-  unsigned int responseHigh = (unsigned int) response[2];
-  unsigned int responseLow = (unsigned int) response[3];
+  if (response[1] != 0x86){  // ungültige Antwort
+    Serial.flush();
+    Serial.end();
+    Serial.begin(9600); 
+    return co2;              // alten Messwert zurückliefern
+  } else {
+    unsigned int responseHigh = (unsigned int) response[2];
+    unsigned int responseLow = (unsigned int) response[3];
 
-  return (256 * responseHigh) + responseLow;
+    return (256 * responseHigh) + responseLow;
+  }
 }
 
 String uptime() {
