@@ -15,7 +15,7 @@
  *                                                                          *
  *  Homepage: http://pits.TGD-Consulting.de                                 *
  *                                                                          *
- *  Version 0.2.0                                                           *
+ *  Version 0.2.1                                                           *
  *  Datum 20.09.2020                                                        *
  *                                                                          *
  *  (C) 2020 TGD-Consulting , Author: Dirk Weyand                           *
@@ -142,10 +142,10 @@ void setup() {
 }
 
 void loop() {
-  uint32_t ID1 = leds.Color(0, 255, 0); //RGB Farbe Grün
-  uint32_t ID2 = leds.Color(0, 255, 0); //RGB Farbe Hellgrün
-  uint32_t ID3 = leds.Color(255, 255, 0); //RGB Farbe Gelb
-  uint32_t ID4 = leds.Color(255, 0, 0); //RGB Farbe Rot
+  uint32_t ID1 = leds.Color(162, 230, 124); //RGB Farbe Grün
+  uint32_t ID2 = leds.Color(200, 240, 180); //RGB Farbe Hellgrün
+  uint32_t ID3 = leds.Color(255, 255, 142); //RGB Farbe Gelb
+  uint32_t ID4 = leds.Color(255, 142, 142); //RGB Farbe Rot
   Intervall = MINUTEN * 60 * 1000;
 
   // MH-Z19B Sensor auslesen
@@ -154,7 +154,7 @@ void loop() {
   // CO2-Ampel
   if(co2 > 1900){   // ID4 sehr niedrig => rot blinken
     for (int i = 0; i <= 4; i++) {
-      FadeOutIn (0x00, 0xFF, 0x00); // Farbe Rot Fade out/Fade in
+      FadeOutIn (0xFF, 0x8E, 0x8E); // Farbe Rot FF8E8E Fade out/Fade in
       delay(1000); // warte 1s
     }
   } else {
