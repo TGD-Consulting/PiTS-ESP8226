@@ -10,13 +10,13 @@
  *   Timezone (https://github.com/JChristensen/Timezone),                   *
  *   Adafruit_NeoPixel (https://github.com/adafruit/Adafruit_NeoPixel),     *
  *                                                                          *
- *  Die Übertragung des Messwerte erfolgt per HTTP-Get Request an das       *
+ *  Die Übertragung des Messwertes erfolgt per HTTP-Get Request an das      *
  *  Webserver Modul von PiTS-It!                                            *
  *                                                                          *
  *  Homepage: http://pits.TGD-Consulting.de                                 *
  *                                                                          *
- *  Version 0.2.1                                                           *
- *  Datum 20.09.2020                                                        *
+ *  Version 0.2.2                                                           *
+ *  Datum 21.09.2020                                                        *
  *                                                                          *
  *  (C) 2020 TGD-Consulting , Author: Dirk Weyand                           *
  ****************************************************************************/
@@ -51,11 +51,16 @@
 bool startWiFi(void);
 time_t getNTPtime(void);
 
-uint8_t count;  // Zähler für WiFi-Connect Versuche
-int co2 = 400;  // bisheriger co2 Messwert
-
 Adafruit_NeoPixel leds(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800); // Adafruit_NeoPixel Library setup
 NTP NTPclient;
+
+uint8_t count;  // Zähler für WiFi-Connect Versuche
+int co2 = 400;  // bisheriger co2 Messwert
+int Intervall = MINUTEN * 60 * 1000;      // Sleeptime = Messinterval
+uint32_t ID1 = leds.Color(162, 230, 124); // RGB Farbe Grün für CO2-Ampel hohe Raumluftqualität
+uint32_t ID2 = leds.Color(200, 240, 180); // RGB Farbe Hellgrün für CO2-Ampel mittlere Raumluftqualität
+uint32_t ID3 = leds.Color(255, 255, 142); // RGB Farbe Gelb für CO2-Ampel mäßige Raumluftqualität
+uint32_t ID4 = leds.Color(255, 142, 142); // RGB Farbe Rot für CO2-Ampel niedrige Raumluftqualität
 
 //Central European Time (Berlin, Paris)
 TimeChangeRule CEST = {"CEST", Last, Sun, Mar, 2, 120};    //Central European Summer Time = UTC + 2 hours
@@ -140,14 +145,8 @@ void setup() {
   delay(1000); // warte 1s
   leds.clear();            // alle LEDs ausschalten
 }
-
+  
 void loop() {
-  uint32_t ID1 = leds.Color(162, 230, 124); //RGB Farbe Grün
-  uint32_t ID2 = leds.Color(200, 240, 180); //RGB Farbe Hellgrün
-  uint32_t ID3 = leds.Color(255, 255, 142); //RGB Farbe Gelb
-  uint32_t ID4 = leds.Color(255, 142, 142); //RGB Farbe Rot
-  Intervall = MINUTEN * 60 * 1000;
-
   // MH-Z19B Sensor auslesen
   co2 = co2ppm();
 
