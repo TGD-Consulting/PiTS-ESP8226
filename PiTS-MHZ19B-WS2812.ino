@@ -15,7 +15,7 @@
  *                                                                          *
  *  Homepage: http://pits.TGD-Consulting.de                                 *
  *                                                                          *
- *  Version 0.2.3                                                           *
+ *  Version 0.3.0                                                           *
  *  Datum 22.09.2020                                                        *
  *                                                                          *
  *  (C) 2020 TGD-Consulting , Author: Dirk Weyand                           *
@@ -27,7 +27,7 @@
 
 #define WLAN_SSID               "SSID des WLAN"          // change to your WiFi SSID 
 #define WLAN_PASSPHRASE         "DAS GEHEIME PASSWORT"   // change to your passphrase
-#define RETRIES 10                                       // maximale Anzahl der Verbindungsversuche mit WLAN-AP
+#define RETRIES 8                                        // maximale Anzahl der Verbindungsversuche mit WLAN-AP
 #define NTP_SERVER              "192.168.0.1"            // set your local NTP-Server here, or eg. "ptbtime2.ptb.de"
 #define PITS_HOST               "192.168.0.25"           // PiTS-It! Webserver
 #define PITS_PORT               8080                     // Port des Webservers
@@ -37,6 +37,8 @@
 //#define SERDEBUG 1       // Debug-Infos über Serielle Schnittstelle senden, auskommentiert = Debugging OFF  
 #define PIN 2            // WS2812B wird an GPIO 2 des ESP-01 angeschlossen
 #define NUMPIXELS 1      // Anzahl der am PIN angeschlossenen WS2812B (eine LED ausreichend für einfache CO2-Ampel)
+#define BRIGHTNESS 200   // Helligkeit der LEDs (0 dunkel -> 255 ganz hell)
+#define STRIPTEST 1      // LEDs beim Setup testen, auskommentiert = kein Test
 #define MINUTEN 5        // Abtastrate, Anzahl Minuten bis zur nächsten Datenübermittlung
 
 // include requiered library header
@@ -71,6 +73,27 @@ TimeChangeRule *tcr;        //pointer to the time change rule, use to get TZ abb
 
 ADC_MODE(ADC_VCC);          // Aktiviert Spannungsabfrage
 
+// Returns the Red component of a 32-bit color
+uint8_t Red(uint32_t color) {
+  return (color >> 16) & 0xFF;
+}
+ 
+// Returns the Green component of a 32-bit color
+uint8_t Green(uint32_t color) {
+  return (color >> 8) & 0xFF;
+}
+ 
+// Returns the Blue component of a 32-bit color
+uint8_t Blue(uint32_t color) {
+  return color & 0xFF;
+}
+
+// Return color, dimmed 
+uint32_t DimColor(uint32_t color) {
+  uint32_t dimColor = Color(Red(color) >> 1, Green(color) >> 1, Blue(color) >> 1);
+  return dimColor;
+}
+
 void FadeOut (byte red, byte green, byte blue){
   float r, g, b;
 
@@ -98,8 +121,6 @@ void FadeIn (byte red, byte green, byte blue){
 }
 
 void FadeOutIn (byte red, byte green, byte blue){
-  float r, g, b;
-
   FadeOut (red, gree, blue);
   FadeIn  (red, green, blue);
 }
@@ -131,15 +152,35 @@ void setup() {
 #endif
 
   leds.begin();
-  leds.setBrightness(250); //die Helligkeit setzen 0 dunkel -> 255 ganz hell
+  leds.setBrightness(BRIGHTNESS); //die Helligkeit des LED-Strips setzen 0 dunkel -> 255 ganz hell
   leds.show();
+
+#ifdef SERDEBUG
+  Serial.print("PITS >> LEDS >> Brightness: ");
+  Serial.println(String(leds.getBrightness()));
+#endif
+
+#ifdef STRIPTEST
+  // Test LED-Strip (Farben der LED setzen)
+  leds.setPixelColor(0, leds.Color(255, 0, 0)); // Farbe Rot setzen
+  leds.show(); //Anzeigen
+  delay(1000); // warte 1s
+  leds.setPixelColor(0, leds.Color(255, 255, 0)); // Farbe Gelb setzen
+  leds.show(); //Anzeigen
+  delay(1000); // warte 1s
+  leds.setPixelColor(0, leds.Color(0, 255, 0)); // Farbe Grün setzen
+  leds.show(); //Anzeigen
+  delay(1000); // warte 1s
+  leds.setPixelColor(0, leds.Color(0, 0, 255)); // Farbe Blau setzen
+  leds.show(); //Anzeigen
+  delay(1000); // warte 1s
+#endif
 
   // mit WLAN-AP verbinden
   count = 0;
   while (count <= RETRIES && !startWiFi()) {
-    delay(1500);
     count++;
-    leds.setBrightness(250 - (count * 15)); // dunkler dimmen 
+    leds.setPixelColor(0, DimColor(leds.getPixelColor(0))); // dunkler dimmen
     leds.show();
   }
 
@@ -164,9 +205,6 @@ void setup() {
 
   Serial.begin(9600);      // richtige Geschwindigkeit der seriellen Schnittstelle für MH-Z19B setzen
 
-  leds.setBrightness(255); //die Helligkeit ganz hell
-  leds.show();
-  delay(500);  // warte 500ms
   leds.setPixelColor(0, leds.Color(255, 0, 0)); // Farbe Rot setzen
   leds.show(); //Anzeigen
   delay(1000); // warte 1s
@@ -177,6 +215,7 @@ void setup() {
   leds.show(); //Anzeigen
   delay(1000); // warte 1s
   leds.clear();            // alle LEDs ausschalten
+  leds.show(); //Anzeigen
 }
   
 void loop() {
@@ -184,25 +223,25 @@ void loop() {
   co2 = co2ppm();
 
   // CO2-Ampel
-  if(co2 > 1900){   // ID4 sehr niedrig => rot blinken
+  if(co2 > 1900){               // ID4 sehr niedrig => rot blinken
+    leds.setPixelColor(0, ID4); // Farbe Rot setzen
+    leds.show(); //Anzeigen
     for (int i = 0; i <= 4; i++) {
       FadeOutIn (0xFF, 0x8E, 0x8E); // Farbe Rot FF8E8E Fade out/Fade in
       delay(1000); // warte 1s
     }
-  } else {
-    if(co2 > 1400){ // ID4 niedrig => rot
-      leds.setPixelColor(0, ID4); // Farbe Rot setzen
-    } else {
-      if(co2 >= 1000){ // ID3 mäßig => gelb
-        leds.setPixelColor(0, ID3); // Farbe Gelb setzen
-      } else {
-        if(co2 >= 800){ // ID2 mittel => hellgrün 
-          leds.setPixelColor(0, ID2); // Farbe Grün setzen
-        } else {        // ID1 gut => grün
-          leds.setPixelColor(0, ID1); // Farbe Grün setzen
-        }
-      }
-    }
+  }
+  else if(co2 > 1400){          // ID4 niedrig => rot
+    leds.setPixelColor(0, ID4); // Farbe Rot setzen
+  }
+  else if(co2 >= 1000){         // ID3 mäßig => gelb
+    leds.setPixelColor(0, ID3); // Farbe Gelb setzen
+  }
+  else if(co2 >= 800){          // ID2 mittel => hellgrün
+    leds.setPixelColor(0, ID2); // Farbe Grün setzen
+  }
+   else {                       // ID1 gut => grün
+    leds.setPixelColor(0, ID1); // Farbe Grün setzen
   }
   leds.show(); //Anzeigen
 
