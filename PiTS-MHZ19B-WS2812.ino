@@ -15,8 +15,8 @@
  *                                                                          *
  *  Homepage: http://pits.TGD-Consulting.de                                 *
  *                                                                          *
- *  Version 0.2.2                                                           *
- *  Datum 21.09.2020                                                        *
+ *  Version 0.2.3                                                           *
+ *  Datum 22.09.2020                                                        *
  *                                                                          *
  *  (C) 2020 TGD-Consulting , Author: Dirk Weyand                           *
  ****************************************************************************/
@@ -70,6 +70,39 @@ Timezone CE(CEST, CET);
 TimeChangeRule *tcr;        //pointer to the time change rule, use to get TZ abbrev
 
 ADC_MODE(ADC_VCC);          // Aktiviert Spannungsabfrage
+
+void FadeOut (byte red, byte green, byte blue){
+  float r, g, b;
+
+  for(int k = 255; k >= 0; k=k-2) {
+    r = (k/256.0)*red;
+    g = (k/256.0)*green;
+    b = (k/256.0)*blue;
+    leds.setPixelColor(0, (uint8_t) r,(uint8_t) g, (uint8_t) b);
+    leds.show();
+    delay(20);
+  }
+}
+
+void FadeIn (byte red, byte green, byte blue){
+  float r, g, b;
+
+  for(int k = 0; k < 256; k=k+1) {
+    r = (k/256.0)*red;
+    g = (k/256.0)*green;
+    b = (k/256.0)*blue;
+    leds.setPixelColor(0, (uint8_t) r,(uint8_t) g, (uint8_t) b);
+    leds.show();
+    delay(20);
+  }
+}
+
+void FadeOutIn (byte red, byte green, byte blue){
+  float r, g, b;
+
+  FadeOut (red, gree, blue);
+  FadeIn  (red, green, blue);
+}
 
 void setup() {
 #ifdef SERDEBUG
@@ -215,26 +248,6 @@ void loop() {
   }
 
   delay(Intervall); // Abstand zwischen den Messungen
-}
-
-void FadeOutIn (byte red, byte green, byte blue){
-  float r, g, b;
-
-  for(int k = 255; k >= 0; k=k-2) {
-    r = (k/256.0)*red;
-    g = (k/256.0)*green;
-    b = (k/256.0)*blue;
-    leds.setPixelColor(0, (int) r,(int) g, (int) b);
-    leds.show();
-  }
-      
-  for(int k = 0; k < 256; k=k+1) { 
-    r = (k/256.0)*red;
-    g = (k/256.0)*green;
-    b = (k/256.0)*blue;
-    leds.setPixelColor(0, (int) r,(int) g, (int) b);
-    leds.show();
-  }
 }
 
 int co2ppm() {
