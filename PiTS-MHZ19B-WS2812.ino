@@ -213,15 +213,15 @@ void setup() {
   leds.setPixelColor(0, color = leds.Color(255, 0, 0)); // Farbe Rot setzen
   leds.show(); //Anzeigen
   delay(1000); // warte 1s
-  FadeOut ((byte) Red(color),(byte) Green(color), (byte) Green(color));  // ausdimmen
+  FadeOut ((byte) Red(color), (byte) Green(color), (byte) Blue(color));  // ausdimmen
   leds.setPixelColor(0, color = leds.Color(255, 255, 0)); // Farbe Gelb setzen
   leds.show(); //Anzeigen
   delay(1000); // warte 1s
-  FadeOut ((byte) Red(color),(byte) Green(color), (byte) Green(color));   // ausdimmen
+  FadeOut ((byte) Red(color), (byte) Green(color), (byte) Blue(color));   // ausdimmen
   leds.setPixelColor(0, color = leds.Color(0, 255, 0)); // Farbe Grün setzen
   leds.show(); //Anzeigen
   delay(1000); // warte 1s
-  FadeOut ((byte) Red(color),(byte) Green(color), (byte) Green(color));  // ausdimmen
+  FadeOut ((byte) Red(color), (byte) Green(color), (byte) Blue(color));  // ausdimmen
   leds.clear();            // alle LEDs ausschalten
   leds.show(); //Anzeigen
 }
