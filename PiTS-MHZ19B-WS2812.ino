@@ -60,10 +60,10 @@ uint8_t count;  // Zähler für WiFi-Connect Versuche
 uint32_t color; // 'Packed' 32-bit RGB Pixelcolor
 int co2 = 400;  // bisheriger co2 Messwert
 int Intervall = MINUTEN * 60 * 1000;      // Sleeptime = Messinterval
-uint32_t ID1 = leds.Color(162, 230, 124); // RGB Farbe Grün für CO2-Ampel hohe Raumluftqualität
-uint32_t ID2 = leds.Color(200, 240, 180); // RGB Farbe Hellgrün für CO2-Ampel mittlere Raumluftqualität
-uint32_t ID3 = leds.Color(255, 255, 142); // RGB Farbe Gelb für CO2-Ampel mäßige Raumluftqualität
-uint32_t ID4 = leds.Color(255, 142, 142); // RGB Farbe Rot für CO2-Ampel niedrige Raumluftqualität
+uint32_t ID1 = leds.Color(21, 230, 12);   // RGB Farbe Grün für CO2-Ampel hohe Raumluftqualität
+uint32_t ID2 = leds.Color(42, 240, 21);   // RGB Farbe Hellgrün für CO2-Ampel mittlere Raumluftqualität
+uint32_t ID3 = leds.Color(200, 200, 21);  // RGB Farbe Gelb für CO2-Ampel mäßige Raumluftqualität
+uint32_t ID4 = leds.Color(255, 21, 21);   // RGB Farbe Rot für CO2-Ampel niedrige Raumluftqualität
 
 //Central European Time (Berlin, Paris)
 TimeChangeRule CEST = {"CEST", Last, Sun, Mar, 2, 120};    //Central European Summer Time = UTC + 2 hours
@@ -180,16 +180,17 @@ void setup() {
   leds.show(); //Anzeigen
   delay(1000); // warte 1s
 #endif
+  leds.setPixelColor(0, leds.Color(0, 0, 255)); // Farbe Blau setzen zum Dimmen bei erfolglosen WLAN-Connect Versuchen
 
   // mit WLAN-AP verbinden
   count = 0;
-  while (count <= RETRIES && !startWiFi()) {
+  while (count < RETRIES && !startWiFi()) {
     count++;
     leds.setPixelColor(0, DimColor(leds.getPixelColor(0))); // dunkler dimmen
     leds.show();
   }
 
-  if(count <= RETRIES){
+  if(count < RETRIES){
 #ifdef SERDEBUG
     Serial.println("WiFi connected");
     Serial.print("WIFI >> IP address: ");
@@ -210,16 +211,20 @@ void setup() {
 
   Serial.begin(9600);      // richtige Geschwindigkeit der seriellen Schnittstelle für MH-Z19B setzen
 
-  // Ampel Farben durchlaufen = jetz geht's los mit der Messung 
-  leds.setPixelColor(0, color = leds.Color(255, 0, 0)); // Farbe Rot setzen
+  // Ampel Farben durchlaufen = gleich geht's los mit der Messung 
+  leds.setPixelColor(0, color = ID4); // Farbe Rot setzen
   leds.show(); //Anzeigen
   delay(1000); // warte 1s
   FadeOut ((byte) Red(color), (byte) Green(color), (byte) Blue(color));  // ausdimmen
-  leds.setPixelColor(0, color = leds.Color(255, 255, 0)); // Farbe Gelb setzen
+  leds.setPixelColor(0, color = ID3); // Farbe Gelb setzen
   leds.show(); //Anzeigen
   delay(1000); // warte 1s
   FadeOut ((byte) Red(color), (byte) Green(color), (byte) Blue(color));   // ausdimmen
-  leds.setPixelColor(0, color = leds.Color(0, 255, 0)); // Farbe Grün setzen
+  leds.setPixelColor(0, color = ID2);  // Farbe Hellgrün setzen
+  leds.show(); //Anzeigen
+  delay(1000); // warte 1s
+  FadeOut ((byte) Red(color), (byte) Green(color), (byte) Blue(color));  // ausdimmen
+  leds.setPixelColor(0, color = ID1); // Farbe Grün setzen
   leds.show(); //Anzeigen
   delay(1000); // warte 1s
   FadeOut ((byte) Red(color), (byte) Green(color), (byte) Blue(color));  // ausdimmen
@@ -254,7 +259,7 @@ void loop() {
   }
   leds.show(); //Anzeigen
 
-  if(count <= RETRIES){                       // nur Messdaten senden, wenn erfolgreich WiFi
+  if(count < RETRIES){                       // nur Messdaten senden, wenn erfolgreich WiFi
     // Werte des MH-Z19B Sensors ausgelesen => Signalisierung an PITS-Server
     time_t t = CE.toLocal(now(), &tcr);      // Store the current local time in time variable t
 //    time_t t = now();                      // Store the current time in time variable t
