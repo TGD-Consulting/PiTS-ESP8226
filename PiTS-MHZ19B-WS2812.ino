@@ -15,8 +15,8 @@
  *                                                                          *
  *  Homepage: http://pits.TGD-Consulting.de                                 *
  *                                                                          *
- *  Version 0.3.0                                                           *
- *  Datum 22.09.2020                                                        *
+ *  Version 0.3.1                                                           *
+ *  Datum 24.09.2020                                                        *
  *                                                                          *
  *  (C) 2020 TGD-Consulting , Author: Dirk Weyand                           *
  ****************************************************************************/
@@ -57,6 +57,7 @@ Adafruit_NeoPixel leds(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800); // Adafruit_NeoPix
 NTP NTPclient;
 
 uint8_t count;  // Zähler für WiFi-Connect Versuche
+uint32_t color; // 'Packed' 32-bit RGB Pixelcolor
 int co2 = 400;  // bisheriger co2 Messwert
 int Intervall = MINUTEN * 60 * 1000;      // Sleeptime = Messinterval
 uint32_t ID1 = leds.Color(162, 230, 124); // RGB Farbe Grün für CO2-Ampel hohe Raumluftqualität
@@ -162,6 +163,9 @@ void setup() {
 
 #ifdef STRIPTEST
   // Test LED-Strip (Farben der LED setzen)
+  leds.fill();    // alle LEDs des Strips leuchten
+  leds.show();
+  delay(1000); // warte 1s
   leds.setPixelColor(0, leds.Color(255, 0, 0)); // Farbe Rot setzen
   leds.show(); //Anzeigen
   delay(1000); // warte 1s
@@ -205,15 +209,19 @@ void setup() {
 
   Serial.begin(9600);      // richtige Geschwindigkeit der seriellen Schnittstelle für MH-Z19B setzen
 
-  leds.setPixelColor(0, leds.Color(255, 0, 0)); // Farbe Rot setzen
+  // Ampel Farben durchlaufen = jetz geht's los mit der Messung 
+  leds.setPixelColor(0, color = leds.Color(255, 0, 0)); // Farbe Rot setzen
   leds.show(); //Anzeigen
   delay(1000); // warte 1s
-  leds.setPixelColor(0, leds.Color(255, 255, 0)); // Farbe Gelb setzen
+  FadeOut ((byte) Red(color),(byte) Green(color), (byte) Green(color));  // ausdimmen
+  leds.setPixelColor(0, color = leds.Color(255, 255, 0)); // Farbe Gelb setzen
   leds.show(); //Anzeigen
   delay(1000); // warte 1s
-  leds.setPixelColor(0, leds.Color(0, 255, 0)); // Farbe Grün setzen
+  FadeOut ((byte) Red(color),(byte) Green(color), (byte) Green(color));   // ausdimmen
+  leds.setPixelColor(0, color = leds.Color(0, 255, 0)); // Farbe Grün setzen
   leds.show(); //Anzeigen
   delay(1000); // warte 1s
+  FadeOut ((byte) Red(color),(byte) Green(color), (byte) Green(color));  // ausdimmen
   leds.clear();            // alle LEDs ausschalten
   leds.show(); //Anzeigen
 }
