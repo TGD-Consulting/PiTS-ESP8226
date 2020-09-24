@@ -163,9 +163,10 @@ void setup() {
 
 #ifdef STRIPTEST
   // Test LED-Strip (Farben der LED setzen)
-  leds.fill();    // alle LEDs des Strips leuchten
+  leds.fill(leds.Color(255, 255, 255));    // alle LEDs des Strips leuchten weiss
   leds.show();
-  delay(1000); // warte 1s
+  delay(1000);    // warte 1s
+  leds.clear();   // alle LEDs ausschalten
   leds.setPixelColor(0, leds.Color(255, 0, 0)); // Farbe Rot setzen
   leds.show(); //Anzeigen
   delay(1000); // warte 1s
