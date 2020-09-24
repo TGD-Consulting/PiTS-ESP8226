@@ -91,7 +91,7 @@ uint8_t Blue(uint32_t color) {
 
 // Return color, dimmed 
 uint32_t DimColor(uint32_t color) {
-  uint32_t dimColor = Color(Red(color) >> 1, Green(color) >> 1, Blue(color) >> 1);
+  uint32_t dimColor = leds.Color(Red(color) >> 1, Green(color) >> 1, Blue(color) >> 1);
   return dimColor;
 }
 
@@ -122,7 +122,7 @@ void FadeIn (byte red, byte green, byte blue){
 }
 
 void FadeOutIn (byte red, byte green, byte blue){
-  FadeOut (red, gree, blue);
+  FadeOut (red, green, blue);
   FadeIn  (red, green, blue);
 }
 
