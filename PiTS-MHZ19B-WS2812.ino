@@ -238,10 +238,10 @@ void loop() {
 
   // CO2-Ampel
   if(co2 > 1900){               // ID4 sehr niedrig => rot blinken
-    leds.setPixelColor(0, ID4); // Farbe Rot setzen
+    leds.setPixelColor(0, color = ID4); // Farbe Rot setzen
     leds.show(); //Anzeigen
     for (int i = 0; i <= 4; i++) {
-      FadeOutIn (0xFF, 0x8E, 0x8E); // Farbe Rot FF8E8E Fade out/Fade in
+      FadeOut ((byte) Red(color), (byte) Green(color), (byte) Blue(color)); // Farbe Rot Fade out/Fade in
       delay(1000); // warte 1s
     }
   }
