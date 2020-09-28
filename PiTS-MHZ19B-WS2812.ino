@@ -241,7 +241,7 @@ void loop() {
     leds.setPixelColor(0, color = ID4); // Farbe Rot setzen
     leds.show(); //Anzeigen
     for (int i = 0; i <= 4; i++) {
-      FadeOut ((byte) Red(color), (byte) Green(color), (byte) Blue(color)); // Farbe Rot Fade out/Fade in
+      FadeOutIn ((byte) Red(color), (byte) Green(color), (byte) Blue(color)); // Farbe Rot Fade out/Fade in
       delay(1000); // warte 1s
     }
   }
