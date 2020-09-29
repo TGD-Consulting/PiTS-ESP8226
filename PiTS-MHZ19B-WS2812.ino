@@ -237,28 +237,28 @@ void loop() {
   co2 = co2ppm();
 
   // CO2-Ampel
-  if(co2 > 1900){               // ID4 sehr niedrig => rot blinken
-    leds.setPixelColor(0, color = ID4); // Farbe Rot setzen
+  if(co2 > 1900){                           // ID4 sehr niedrig => rot blinken
+    leds.setPixelColor(0, color = ID4);     // Rot für CO2-Ampel niedrige Raumluftqualität = ID4
     leds.show(); //Anzeigen
     for (int i = 0; i <= 4; i++) {
       FadeOutIn ((byte) Red(color), (byte) Green(color), (byte) Blue(color)); // Farbe Rot Fade out/Fade in
       delay(1000); // warte 1s
     }
   }
-  else if(co2 > 1400){          // ID4 niedrig => rot
-    leds.setPixelColor(0, ID4); // Farbe Rot setzen
+  else if(co2 > 1400){            // ID4 niedrig => rot
+    leds.setPixelColor(0, ID4);   // Rot für CO2-Ampel niedrige Raumluftqualität = ID4
   }
-  else if(co2 >= 1000){         // ID3 mäßig => gelb
-    leds.setPixelColor(0, ID3); // Farbe Gelb setzen
+  else if(co2 >= 1000){           // ID3 mäßig => gelb
+    leds.setPixelColor(0, ID3);   // Gelb für CO2-Ampel mäßige Raumluftqualität = ID3
   }
-  else if(co2 >= 800){          // ID2 mittel => hellgrün
-    leds.setPixelColor(0, ID2); // Farbe Grün setzen
+  else if(co2 >= 800){            // ID2 mittel => hellgrün
+    leds.setPixelColor(0, ID2);   // Hellgrün für CO2-Ampel mittlere Raumluftqualität = ID2
   }
-   else {                       // ID1 gut => grün
-    leds.setPixelColor(0, ID1); // Farbe Grün setzen
+   else {                         // ID1 gut => grün
+    leds.setPixelColor(0, ID1);   // Grün für CO2-Ampel hohe Raumluftqualität = ID1
   }
   leds.show(); //Anzeigen
-
+  
   if(count < RETRIES){                       // nur Messdaten senden, wenn erfolgreich WiFi
     // Werte des MH-Z19B Sensors ausgelesen => Signalisierung an PITS-Server
     time_t t = CE.toLocal(now(), &tcr);      // Store the current local time in time variable t
