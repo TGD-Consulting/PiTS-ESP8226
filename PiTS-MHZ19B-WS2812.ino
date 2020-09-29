@@ -15,8 +15,8 @@
  *                                                                          *
  *  Homepage: http://pits.TGD-Consulting.de                                 *
  *                                                                          *
- *  Version 0.3.1                                                           *
- *  Datum 24.09.2020                                                        *
+ *  Version 0.3.2                                                           *
+ *  Datum 29.09.2020                                                        *
  *                                                                          *
  *  (C) 2020 TGD-Consulting , Author: Dirk Weyand                           *
  ****************************************************************************/
@@ -104,7 +104,7 @@ void FadeOut (byte red, byte green, byte blue){
     b = (k/256.0)*blue;
     leds.setPixelColor(0, (uint8_t) r,(uint8_t) g, (uint8_t) b);
     leds.show();
-    delay(20);
+    delay(5);
   }
 }
 
@@ -117,7 +117,7 @@ void FadeIn (byte red, byte green, byte blue){
     b = (k/256.0)*blue;
     leds.setPixelColor(0, (uint8_t) r,(uint8_t) g, (uint8_t) b);
     leds.show();
-    delay(20);
+    delay(10);
   }
 }
 
@@ -240,7 +240,7 @@ void loop() {
   if(co2 > 1900){                           // ID4 sehr niedrig => rot blinken
     leds.setPixelColor(0, color = ID4);     // Rot für CO2-Ampel niedrige Raumluftqualität = ID4
     leds.show(); //Anzeigen
-    for (int i = 0; i <= 4; i++) {
+    for (int i = 0; i <= 10; i++) {
       FadeOutIn ((byte) Red(color), (byte) Green(color), (byte) Blue(color)); // Farbe Rot Fade out/Fade in
       delay(1000); // warte 1s
     }
