@@ -15,7 +15,7 @@
  *                                                                          *
  *  Homepage: http://pits.TGD-Consulting.de                                 *
  *                                                                          *
- *  Version 0.5.0                                                           *
+ *  Version 0.5.1                                                           *
  *  Datum 03.10.2020                                                        *
  *                                                                          *
  *  (C) 2020 TGD-Consulting , Author: Dirk Weyand                           *
@@ -319,7 +319,7 @@ int co2ppm() {         // original code @ https://github.com/jehy/arduino-esp826
     Serial.read();           // liest ein Byte von der seriellen Scnittstelle zum resyncen
   }
   
-  memset(response, 0, 9)     // Response-Buffer mit 0-Bytes initialisieren
+  memset(response, 0, 9);    // Response-Buffer mit 0-Bytes initialisieren
   Serial.readBytes(response, 9);
   
   if (response[1] != 0x86){  // ungültige Antwort
