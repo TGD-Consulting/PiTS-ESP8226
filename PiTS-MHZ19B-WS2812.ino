@@ -15,7 +15,7 @@
  *                                                                          *
  *  Homepage: http://pits.TGD-Consulting.de                                 *
  *                                                                          *
- *  Version 0.3.3                                                           *
+ *  Version 0.4.0                                                           *
  *  Datum 03.10.2020                                                        *
  *                                                                          *
  *  (C) 2020 TGD-Consulting , Author: Dirk Weyand                           *
@@ -58,7 +58,6 @@ NTP NTPclient;
 
 uint8_t count;  // Zähler für WiFi-Connect Versuche
 uint32_t color; // 'Packed' 32-bit RGB Pixelcolor
-int co2 = 400;  // bisheriger co2 Messwert
 int Intervall = MINUTEN * 60 * 1000;      // Sleeptime = Messinterval
 uint32_t ID1 = leds.Color(21, 230, 12);   // RGB Farbe Grün für CO2-Ampel hohe Raumluftqualität
 uint32_t ID2 = leds.Color(42, 240, 21);   // RGB Farbe Hellgrün für CO2-Ampel mittlere Raumluftqualität
@@ -233,13 +232,13 @@ void setup() {
 }
   
 void loop() {
-  // MH-Z19B Sensor auslesen
-  co2 = co2ppm();
-
+  int co2 = 400;   // bisheriger co2 Messwert
+  co2 = co2ppm();  // MH-Z19B Sensor auslesen
+  
   // CO2-Ampel
   if(co2 > 1900){                           // ID4 sehr niedrig => rot blinken
     leds.setPixelColor(0, color = ID4);     // Rot für CO2-Ampel niedrige Raumluftqualität = ID4
-    leds.show(); //Anzeigen
+    leds.show();   //Anzeigen
     for (int i = 0; i <= 10; i++) {
       FadeOutIn ((byte) Red(color), (byte) Green(color), (byte) Blue(color)); // Farbe Rot Fade out/Fade in
       delay(1000); // warte 1s
@@ -254,8 +253,11 @@ void loop() {
   else if(co2 >= 800){            // ID2 mittel => hellgrün
     leds.setPixelColor(0, ID2);   // Hellgrün für CO2-Ampel mittlere Raumluftqualität = ID2
   }
-   else {                         // ID1 gut => grün
+  else if(co2 >= 400) {           // ID1 gut => grün
     leds.setPixelColor(0, ID1);   // Grün für CO2-Ampel hohe Raumluftqualität = ID1
+  } else {
+    yield();
+    return;
   }
   leds.show(); //Anzeigen
   
@@ -265,7 +267,7 @@ void loop() {
 //    time_t t = now();                      // Store the current time in time variable t
     String DateTimeString = String(day(t), DEC) + "-" + String(month(t), DEC) + "-" + String(year(t), DEC);
     DateTimeString = DateTimeString + "/" + String(hour(t), DEC) + ":" + String(minute(t), DEC) + ":" + String(second(t), DEC);
-  
+    
     // Use WiFiClient class to create TCP connections
     WiFiClient client;
     if (!client.connect(PITS_HOST, PITS_PORT)) {
@@ -274,7 +276,7 @@ void loop() {
 #endif
       return;
     }
-  
+    
     // We now create a URI for the request
     String url = "/cgi-bin/import.html?id=";
     url += ZAEHLER_ID;
@@ -288,40 +290,40 @@ void loop() {
       url += "&time=";
       url += DateTimeString;        // im REBOL Time-Format
     }
-  
+    
 #ifdef SERDEBUG
     Serial.print("PITS >> HTTP   >> Requesting URL: ");
     Serial.println(url);
 #endif
-
+    
     // This will send the request to the server
     client.print(String("GET ") + url + " HTTP/1.1\r\n" +
                  "Host: " + PITS_HOST + "\r\n" +
                  "Connection: close\r\n\r\n");
   }
-
+  
   delay(Intervall); // Abstand zwischen den Messungen
 }
 
 int co2ppm() {         // original code @ https://github.com/jehy/arduino-esp8266-mh-z19-serial
   static byte cmd[9] = {0xFF, 0x01, 0x86, 0x00, 0x00, 0x00, 0x00, 0x00, 0x79};  // Befehl zum Abfragen des Sensors
   static byte response[9] = {0};                                                // Response-Buffer mit 0-Bytes initialisieren
-
+  
   Serial.write(cmd, 9);
   
   // The serial stream can get out of sync. The response starts with 0xff, try to resync.
   while (Serial.available() > 0 && (unsigned char)Serial.peek() != 0xFF) {
     Serial.read();           // liest ein Byte von der seriellen Scnittstelle zum resyncen
   }
-
+  
   memset(response, 0, 9)     // Response-Buffer mit 0-Bytes initialisieren
   Serial.readBytes(response, 9);
-
+  
   if (response[1] != 0x86){  // ungültige Antwort
     Serial.flush();
     Serial.end();
     Serial.begin(9600); 
-    return co2;              // alten Messwert zurückliefern
+    return -1;               // Abbruch
   } else {
     
     byte crc = 0;
@@ -329,14 +331,14 @@ int co2ppm() {         // original code @ https://github.com/jehy/arduino-esp826
       crc += response[i];
     }
     crc = 255 - crc + 1;
-
+     
     if (response[8] == crc){
       unsigned int responseHigh = (unsigned int) response[2];
       unsigned int responseLow = (unsigned int) response[3];
-
+    
       return (256 * responseHigh) + responseLow;
     } else {
-      return co2;              // alten Messwert zurückliefern
+      return -1;              // Abbruch
     }
   }
 }
