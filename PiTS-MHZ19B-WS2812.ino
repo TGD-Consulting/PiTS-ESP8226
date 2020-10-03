@@ -15,7 +15,7 @@
  *                                                                          *
  *  Homepage: http://pits.TGD-Consulting.de                                 *
  *                                                                          *
- *  Version 0.4.0                                                           *
+ *  Version 0.5.0                                                           *
  *  Datum 03.10.2020                                                        *
  *                                                                          *
  *  (C) 2020 TGD-Consulting , Author: Dirk Weyand                           *
@@ -59,6 +59,7 @@ NTP NTPclient;
 uint8_t count;  // Zähler für WiFi-Connect Versuche
 uint32_t color; // 'Packed' 32-bit RGB Pixelcolor
 int Intervall = MINUTEN * 60 * 1000;      // Sleeptime = Messinterval
+int temperature = 0;                      // Temperatur des MH-Z19B
 uint32_t ID1 = leds.Color(21, 230, 12);   // RGB Farbe Grün für CO2-Ampel hohe Raumluftqualität
 uint32_t ID2 = leds.Color(42, 240, 21);   // RGB Farbe Hellgrün für CO2-Ampel mittlere Raumluftqualität
 uint32_t ID3 = leds.Color(200, 200, 21);  // RGB Farbe Gelb für CO2-Ampel mäßige Raumluftqualität
@@ -335,7 +336,7 @@ int co2ppm() {         // original code @ https://github.com/jehy/arduino-esp826
     if (response[8] == crc){
       unsigned int responseHigh = (unsigned int) response[2];
       unsigned int responseLow = (unsigned int) response[3];
-    
+      temperature = (unsigned int) response[4] - 40;
       return (256 * responseHigh) + responseLow;
     } else {
       return -1;              // Abbruch
