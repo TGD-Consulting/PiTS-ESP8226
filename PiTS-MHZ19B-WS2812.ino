@@ -303,17 +303,18 @@ void loop() {
   delay(Intervall); // Abstand zwischen den Messungen
 }
 
-int co2ppm() {
-  static byte cmd[9] = {0xFF, 0x01, 0x86, 0x00, 0x00, 0x00, 0x00, 0x00, 0x79};
-  static byte response[9] = {0};
+int co2ppm() {         // original code @ https://github.com/jehy/arduino-esp8266-mh-z19-serial
+  static byte cmd[9] = {0xFF, 0x01, 0x86, 0x00, 0x00, 0x00, 0x00, 0x00, 0x79};  // Befehl zum Abfragen des Sensors
+  static byte response[9] = {0};                                                // Response-Buffer mit 0-Bytes initialisieren
 
   Serial.write(cmd, 9);
   
   // The serial stream can get out of sync. The response starts with 0xff, try to resync.
   while (Serial.available() > 0 && (unsigned char)Serial.peek() != 0xFF) {
-    Serial.read();     // liest ein Byte von der seriellen Scnittstelle zum resyncen
+    Serial.read();           // liest ein Byte von der seriellen Scnittstelle zum resyncen
   }
 
+  memset(response, 0, 9)     // Response-Buffer mit 0-Bytes initialisieren
   Serial.readBytes(response, 9);
 
   if (response[1] != 0x86){  // ungültige Antwort
@@ -322,10 +323,21 @@ int co2ppm() {
     Serial.begin(9600); 
     return co2;              // alten Messwert zurückliefern
   } else {
-    unsigned int responseHigh = (unsigned int) response[2];
-    unsigned int responseLow = (unsigned int) response[3];
+    
+    byte crc = 0;
+    for (int i = 1; i < 8; i++) {
+      crc += response[i];
+    }
+    crc = 255 - crc + 1;
 
-    return (256 * responseHigh) + responseLow;
+    if (response[8] == crc){
+      unsigned int responseHigh = (unsigned int) response[2];
+      unsigned int responseLow = (unsigned int) response[3];
+
+      return (256 * responseHigh) + responseLow;
+    } else {
+      return co2;              // alten Messwert zurückliefern
+    }
   }
 }
 
