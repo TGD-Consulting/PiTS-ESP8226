@@ -285,6 +285,8 @@ void loop() {
     url += TOKEN;
     url += "&data=";
     url += co2;
+    url += ";";
+    url += temperature;
     url += "&run=";
     url += uptime();
     if (timeStatus() != timeNotSet) { // Falls Zeit synchron zum NTP-Server, Zeitpunkt übermitteln
