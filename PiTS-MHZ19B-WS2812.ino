@@ -15,8 +15,8 @@
  *                                                                          *
  *  Homepage: http://pits.TGD-Consulting.de                                 *
  *                                                                          *
- *  Version 0.3.2                                                           *
- *  Datum 29.09.2020                                                        *
+ *  Version 0.3.3                                                           *
+ *  Datum 03.10.2020                                                        *
  *                                                                          *
  *  (C) 2020 TGD-Consulting , Author: Dirk Weyand                           *
  ****************************************************************************/
