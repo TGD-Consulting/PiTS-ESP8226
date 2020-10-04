@@ -15,8 +15,8 @@
  *                                                                          *
  *  Homepage: http://pits.TGD-Consulting.de                                 *
  *                                                                          *
- *  Version 0.5.1                                                           *
- *  Datum 03.10.2020                                                        *
+ *  Version 0.6.0                                                           *
+ *  Datum 04.10.2020                                                        *
  *                                                                          *
  *  (C) 2020 TGD-Consulting , Author: Dirk Weyand                           *
  ****************************************************************************/
@@ -314,7 +314,7 @@ int co2ppm() {         // original code @ https://github.com/jehy/arduino-esp826
   
   Serial.write(cmd, 9);
   
-  // The serial stream can get out of sync. The response starts with 0xff, try to resync.
+  // The serial stream can get out of sync. The response starts with 0xff, if not try to resync.
   while (Serial.available() > 0 && (unsigned char)Serial.peek() != 0xFF) {
     Serial.read();           // liest ein Byte von der seriellen Scnittstelle zum resyncen
   }
@@ -322,20 +322,31 @@ int co2ppm() {         // original code @ https://github.com/jehy/arduino-esp826
   memset(response, 0, 9);    // Response-Buffer mit 0-Bytes initialisieren
   Serial.readBytes(response, 9);
   
-  if (response[1] != 0x86){  // ungültige Antwort
+  if (response[1] != 0x86){  // ungültige Antwort -> serieller Verbindung zurücksetzen, ABC logic on command an Sensor senden, LED blau 6x blinken lassen
     Serial.flush();
     Serial.end();
     Serial.begin(9600); 
+    leds.setPixelColor(0, color = leds.Color(0, 0, 250)); // Farbe Blau setzen
+    for (int i = 0; i <= 3; i++) {
+      FadeOutIn ((byte) Red(color), (byte) Green(color), (byte) Blue(color)); // Farbe Blau Fade out/Fade in
+      delay(1000); // warte 1s
+    }
+    byte abccmd[9] = {0xFF, 0x01, 0x79, 0xA0, 0x00, 0x00, 0x00, 0x00, 0xE6};  // enable ABC logic on command
+    Serial.write(abccmd, 9);
+    for (int i = 0; i <= 3; i++) {
+      FadeOutIn ((byte) Red(color), (byte) Green(color), (byte) Blue(color)); // Farbe Blau Fade out/Fade in
+      delay(1000); // warte 1s
+    }
     return -1;               // Abbruch
   } else {
-    
-    byte crc = 0;
+    // Checksumme berechnen
+    byte crc = 0;  
     for (int i = 1; i < 8; i++) {
       crc += response[i];
     }
     crc = 255 - crc + 1;
      
-    if (response[8] == crc){
+    if (response[8] == crc) { // Checksummen stimmen überein => CO2-Konzentration bestimmen
       unsigned int responseHigh = (unsigned int) response[2];
       unsigned int responseLow = (unsigned int) response[3];
       temperature = (unsigned int) response[4] - 40;
