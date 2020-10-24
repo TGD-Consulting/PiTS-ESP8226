@@ -15,8 +15,8 @@
  *                                                                          *
  *  Homepage: http://pits.TGD-Consulting.de                                 *
  *                                                                          *
- *  Version 0.6.0                                                           *
- *  Datum 04.10.2020                                                        *
+ *  Version 0.7.0                                                           *
+ *  Datum 24.10.2020                                                        *
  *                                                                          *
  *  (C) 2020 TGD-Consulting , Author: Dirk Weyand                           *
  ****************************************************************************/
@@ -39,7 +39,9 @@
 #define NUMPIXELS 1      // Anzahl der am PIN angeschlossenen WS2812B (eine LED ausreichend für einfache CO2-Ampel)
 #define BRIGHTNESS 200   // Helligkeit der LEDs (0 dunkel -> 255 ganz hell)
 #define STRIPTEST 1      // LEDs beim Setup testen, auskommentiert = kein Test
-#define MINUTEN 5        // Abtastrate, Anzahl Minuten bis zur nächsten Datenübermittlung
+#define MINUTEN 2        // Abtastrate, Anzahl Minuten bis zur nächsten Datenübermittlung
+#define COLD 16          // Schwellwert unterhalb der die Raumtemperatur als unterkühlt/kalt gilt
+//#define MWK -4           // Messwertkorrektur damit die Temperatur im Sensor mit Raumtemperatur übereinstimmt, Kommentar entfernen, damit die Ampel blau leuchtet, bei zu kalten Räumen mit hoher Raumluftqualität (ID1)
 
 // include requiered library header
 #include <ESP8266WiFi.h> // WiFi functionality
@@ -256,6 +258,11 @@ void loop() {
   }
   else if(co2 >= 400) {           // ID1 gut => grün
     leds.setPixelColor(0, ID1);   // Grün für CO2-Ampel hohe Raumluftqualität = ID1
+#ifdef MWK
+    if (temperature <= (COLD - MWK)){
+      leds.setPixelColor(0, leds.Color(0, 0, 250));   // Blau für CO2-Ampel kalter Raum, hohe Raumluftqualität = ID1
+    }
+#endif
   } else {
     yield();
     return;
