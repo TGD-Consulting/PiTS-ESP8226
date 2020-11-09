@@ -15,8 +15,8 @@
  *                                                                          *
  *  Homepage: http://pits.TGD-Consulting.de                                 *
  *                                                                          *
- *  Version 0.7.0                                                           *
- *  Datum 24.10.2020                                                        *
+ *  Version 0.7.1                                                           *
+ *  Datum 09.11.2020                                                        *
  *                                                                          *
  *  (C) 2020 TGD-Consulting , Author: Dirk Weyand                           *
  ****************************************************************************/
@@ -169,6 +169,8 @@ void setup() {
   leds.show();
   delay(1000);    // warte 1s
   leds.clear();   // alle LEDs ausschalten
+  leds.show();
+  delay(1000);    // warte 1s
   leds.setPixelColor(0, leds.Color(255, 0, 0)); // Farbe Rot setzen
   leds.show(); //Anzeigen
   delay(1000); // warte 1s
@@ -230,6 +232,15 @@ void setup() {
   leds.show(); //Anzeigen
   delay(1000); // warte 1s
   FadeOut ((byte) Red(color), (byte) Green(color), (byte) Blue(color));  // ausdimmen
+  
+  // erfolgreichen WiFi-Connect signalisieren -> blau dimmen
+  if(count < RETRIES){
+    leds.setPixelColor(0, color = leds.Color(0, 0, 250)); // Farbe Blau setzen
+    leds.show(); //Anzeigen
+    delay(1000); // warte 1s
+    FadeOut ((byte) Red(color), (byte) Green(color), (byte) Blue(color));  // ausdimmen
+  }
+  
   leds.clear();            // alle LEDs ausschalten
   leds.show(); //Anzeigen
 }
@@ -265,6 +276,9 @@ void loop() {
 #endif
   } else {
     yield();
+    leds.clear();            // alle LEDs ausschalten
+    leds.show(); //Anzeigen
+    delay(5000); // warte 5s
     return;
   }
   leds.show(); //Anzeigen
