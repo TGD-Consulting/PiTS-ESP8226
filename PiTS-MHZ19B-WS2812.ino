@@ -15,7 +15,7 @@
  *                                                                          *
  *  Homepage: http://pits.TGD-Consulting.de                                 *
  *                                                                          *
- *  Version 0.7.1                                                           *
+ *  Version 0.7.2                                                           *
  *  Datum 09.11.2020                                                        *
  *                                                                          *
  *  (C) 2020 TGD-Consulting , Author: Dirk Weyand                           *
@@ -61,6 +61,7 @@ NTP NTPclient;
 uint8_t count;  // Zähler für WiFi-Connect Versuche
 uint32_t color; // 'Packed' 32-bit RGB Pixelcolor
 int Intervall = MINUTEN * 60 * 1000;      // Sleeptime = Messinterval
+int co2 = 400;                            // bisheriger co2 Messwert
 int temperature = 0;                      // Temperatur des MH-Z19B
 uint32_t ID1 = leds.Color(21, 230, 12);   // RGB Farbe Grün für CO2-Ampel hohe Raumluftqualität
 uint32_t ID2 = leds.Color(42, 240, 21);   // RGB Farbe Hellgrün für CO2-Ampel mittlere Raumluftqualität
@@ -246,7 +247,7 @@ void setup() {
 }
   
 void loop() {
-  int co2 = 400;   // bisheriger co2 Messwert
+//  int co2 = 400;   // bisheriger co2 Messwert
   co2 = co2ppm();  // MH-Z19B Sensor auslesen
   
   // CO2-Ampel
@@ -347,18 +348,18 @@ int co2ppm() {         // original code @ https://github.com/jehy/arduino-esp826
     Serial.flush();
     Serial.end();
     Serial.begin(9600); 
-    leds.setPixelColor(0, color = leds.Color(0, 0, 250)); // Farbe Blau setzen
-    for (int i = 0; i <= 3; i++) {
-      FadeOutIn ((byte) Red(color), (byte) Green(color), (byte) Blue(color)); // Farbe Blau Fade out/Fade in
-      delay(1000); // warte 1s
-    }
-    byte abccmd[9] = {0xFF, 0x01, 0x79, 0xA0, 0x00, 0x00, 0x00, 0x00, 0xE6};  // enable ABC logic on command
-    Serial.write(abccmd, 9);
-    for (int i = 0; i <= 3; i++) {
-      FadeOutIn ((byte) Red(color), (byte) Green(color), (byte) Blue(color)); // Farbe Blau Fade out/Fade in
-      delay(1000); // warte 1s
-    }
-    return -1;               // Abbruch
+ //   leds.setPixelColor(0, color = leds.Color(0, 0, 250)); // Farbe Blau setzen
+ //   for (int i = 0; i <= 3; i++) {
+ //     FadeOutIn ((byte) Red(color), (byte) Green(color), (byte) Blue(color)); // Farbe Blau Fade out/Fade in
+ //     delay(1000); // warte 1s
+ //   }
+ //   byte abccmd[9] = {0xFF, 0x01, 0x79, 0xA0, 0x00, 0x00, 0x00, 0x00, 0xE6};  // enable ABC logic on command
+ //   Serial.write(abccmd, 9);
+ //   for (int i = 0; i <= 3; i++) {
+ //     FadeOutIn ((byte) Red(color), (byte) Green(color), (byte) Blue(color)); // Farbe Blau Fade out/Fade in
+ //     delay(1000); // warte 1s
+ //   }
+ //   return -1;               // Abbruch
   } else {
     // Checksumme berechnen
     byte crc = 0;  
@@ -373,7 +374,8 @@ int co2ppm() {         // original code @ https://github.com/jehy/arduino-esp826
       temperature = (unsigned int) response[4] - 40;
       return (256 * responseHigh) + responseLow;
     } else {
-      return -1;              // Abbruch
+      return co2;             // alter Messwert
+//      return -1;              // Abbruch
     }
   }
 }
