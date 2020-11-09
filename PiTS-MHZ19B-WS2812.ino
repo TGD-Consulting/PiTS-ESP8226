@@ -15,7 +15,7 @@
  *                                                                          *
  *  Homepage: http://pits.TGD-Consulting.de                                 *
  *                                                                          *
- *  Version 0.7.2                                                           *
+ *  Version 0.7.3                                                           *
  *  Datum 09.11.2020                                                        *
  *                                                                          *
  *  (C) 2020 TGD-Consulting , Author: Dirk Weyand                           *
@@ -360,6 +360,7 @@ int co2ppm() {         // original code @ https://github.com/jehy/arduino-esp826
  //     delay(1000); // warte 1s
  //   }
  //   return -1;               // Abbruch
+    return co2;              // alten Messwert zurückliefern
   } else {
     // Checksumme berechnen
     byte crc = 0;  
