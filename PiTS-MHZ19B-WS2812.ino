@@ -15,8 +15,8 @@
  *                                                                          *
  *  Homepage: http://pits.TGD-Consulting.de                                 *
  *                                                                          *
- *  Version 0.7.3                                                           *
- *  Datum 09.11.2020                                                        *
+ *  Version 0.7.4                                                           *
+ *  Datum 10.11.2020                                                        *
  *                                                                          *
  *  (C) 2020 TGD-Consulting , Author: Dirk Weyand                           *
  ****************************************************************************/
@@ -41,7 +41,7 @@
 #define STRIPTEST 1      // LEDs beim Setup testen, auskommentiert = kein Test
 #define MINUTEN 2        // Abtastrate, Anzahl Minuten bis zur nächsten Datenübermittlung
 #define COLD 16          // Schwellwert unterhalb der die Raumtemperatur als unterkühlt/kalt gilt
-//#define MWK -4           // Messwertkorrektur damit die Temperatur im Sensor mit Raumtemperatur übereinstimmt, Kommentar entfernen, damit die Ampel blau leuchtet, bei zu kalten Räumen mit hoher Raumluftqualität (ID1)
+//#define MWK -8           // Messwertkorrektur damit die Temperatur im Sensor mit Raumtemperatur übereinstimmt, Kommentar entfernen, damit die Ampel blau leuchtet, bei zu kalten Räumen mit hoher Raumluftqualität (ID1)
 
 // include requiered library header
 #include <ESP8266WiFi.h> // WiFi functionality
@@ -344,7 +344,7 @@ int co2ppm() {         // original code @ https://github.com/jehy/arduino-esp826
   memset(response, 0, 9);    // Response-Buffer mit 0-Bytes initialisieren
   Serial.readBytes(response, 9);
   
-  if (response[1] != 0x86){  // ungültige Antwort -> serieller Verbindung zurücksetzen, ABC logic on command an Sensor senden, LED blau 6x blinken lassen
+  if (response[1] != 0x86){  // ungültige Antwort -> serieller Verbindung zurücksetzen //, ABC logic on command an Sensor senden, LED blau 6x blinken lassen
     Serial.flush();
     Serial.end();
     Serial.begin(9600); 
