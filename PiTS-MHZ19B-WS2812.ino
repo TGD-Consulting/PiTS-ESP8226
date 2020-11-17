@@ -8,6 +8,7 @@
  *   NTP (https://github.com/chrismelba/NTP),                               *
  *   Time (https://github.com/PaulStoffregen/Time),                         *
  *   Timezone (https://github.com/JChristensen/Timezone),                   *
+ *   Dusk2Dawn (https://github.com/dmkishi/Dusk2Dawn),                      *
  *   Adafruit_NeoPixel (https://github.com/adafruit/Adafruit_NeoPixel),     *
  *                                                                          *
  *  Die Übertragung des Messwertes erfolgt per HTTP-Get Request an das      *
@@ -15,8 +16,8 @@
  *                                                                          *
  *  Homepage: http://pits.TGD-Consulting.de                                 *
  *                                                                          *
- *  Version 0.7.4                                                           *
- *  Datum 10.11.2020                                                        *
+ *  Version 0.8.0                                                           *
+ *  Datum 15.11.2020                                                        *
  *                                                                          *
  *  (C) 2020 TGD-Consulting , Author: Dirk Weyand                           *
  ****************************************************************************/
@@ -27,6 +28,7 @@
 
 #define WLAN_SSID               "SSID des WLAN"          // change to your WiFi SSID 
 #define WLAN_PASSPHRASE         "DAS GEHEIME PASSWORT"   // change to your passphrase
+#define HOSTNAME                "PiTS-CO2Ampel-01"       // change to unique hostname 
 #define RETRIES 8                                        // maximale Anzahl der Verbindungsversuche mit WLAN-AP
 #define NTP_SERVER              "192.168.0.1"            // set your local NTP-Server here, or eg. "ptbtime2.ptb.de"
 #define PITS_HOST               "192.168.0.25"           // PiTS-It! Webserver
@@ -40,7 +42,12 @@
 #define BRIGHTNESS 200   // Helligkeit der LEDs (0 dunkel -> 255 ganz hell)
 #define STRIPTEST 1      // LEDs beim Setup testen, auskommentiert = kein Test
 #define MINUTEN 2        // Abtastrate, Anzahl Minuten bis zur nächsten Datenübermittlung
+#define TRIGOFF 0        // Trigger Offset (0|100|200) für früheren Wechsel der Ampelfarben, bei 0 Schwellwerte gemäß DIN EN 13779
 #define COLD 16          // Schwellwert unterhalb der die Raumtemperatur als unterkühlt/kalt gilt
+#define NIGHTDIM 1       // Nacht-Modus aktiv, LED wird nach Sonnenuntergang gedimmt, zum Deaktiveren auskommentieren
+#define DIMLVL 3         // Dimm-Level (je größer desto dunkler leuchtet die LED im Nacht-Modus)
+#define LONGITUDE 9.760  // Position Längengrad muss angepasst werden, damit Dämmerungzeiten für den Standort stimmen
+#define LATITUDE 54.644  // Position Breitengrad muss angepasst werden, damit Dämmerungzeiten für den Standort stimmen
 //#define MWK -8           // Messwertkorrektur damit die Temperatur im Sensor mit Raumtemperatur übereinstimmt, Kommentar entfernen, damit die Ampel blau leuchtet, bei zu kalten Räumen mit hoher Raumluftqualität (ID1)
 
 // include requiered library header
@@ -48,6 +55,7 @@
 #include <WiFiUdp.h>     // udp for network time
 #include <TimeLib.h>
 #include <Timezone.h>    // Anpassung an lokale Zeitzone
+#include <Dusk2Dawn.h>   // Dämmerungszeiten bestimmen für Nacht-Modus
 #include <ntp.h>
 #include <Adafruit_NeoPixel.h>
 
@@ -57,16 +65,19 @@ time_t getNTPtime(void);
 
 Adafruit_NeoPixel leds(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800); // Adafruit_NeoPixel Library setup
 NTP NTPclient;
+Dusk2Dawn myPlace(LATITUDE, LONGITUDE, 1);  // Dusk2Dawn library setup
 
 uint8_t count;  // Zähler für WiFi-Connect Versuche
 uint32_t color; // 'Packed' 32-bit RGB Pixelcolor
 int Intervall = MINUTEN * 60 * 1000;      // Sleeptime = Messinterval
 int co2 = 400;                            // bisheriger co2 Messwert
-int temperature = 0;                      // Temperatur des MH-Z19B
-uint32_t ID1 = leds.Color(21, 230, 12);   // RGB Farbe Grün für CO2-Ampel hohe Raumluftqualität
-uint32_t ID2 = leds.Color(42, 240, 21);   // RGB Farbe Hellgrün für CO2-Ampel mittlere Raumluftqualität
-uint32_t ID3 = leds.Color(200, 200, 21);  // RGB Farbe Gelb für CO2-Ampel mäßige Raumluftqualität
-uint32_t ID4 = leds.Color(255, 21, 21);   // RGB Farbe Rot für CO2-Ampel niedrige Raumluftqualität
+int temperature = 25;                     // Temperatur des MH-Z19B
+int tzo = 1;                              // time zone offset in hours from UTC
+bool dst = false;                         // normal time = No Daylight Saving Time 
+uint32_t ID1 = leds.Color(0, 250, 0);   // RGB Farbe Grün für CO2-Ampel hohe Raumluftqualität
+uint32_t ID2 = leds.Color(140, 240, 21);   // RGB Farbe Hellgrün für CO2-Ampel mittlere Raumluftqualität
+uint32_t ID3 = leds.Color(240, 220, 21);  // RGB Farbe Gelb für CO2-Ampel mäßige Raumluftqualität
+uint32_t ID4 = leds.Color(250, 0, 0);     // RGB Farbe Rot für CO2-Ampel niedrige Raumluftqualität
 
 //Central European Time (Berlin, Paris)
 TimeChangeRule CEST = {"CEST", Last, Sun, Mar, 2, 120};    //Central European Summer Time = UTC + 2 hours
@@ -97,6 +108,21 @@ uint32_t DimColor(uint32_t color) {
   uint32_t dimColor = leds.Color(Red(color) >> 1, Green(color) >> 1, Blue(color) >> 1);
   return dimColor;
 }
+
+// Farben für Nacht-Modus festlegen
+#ifdef NIGHTDIM
+uint32_t ID1dim = ID1;
+uint32_t ID2dim = ID2;
+uint32_t ID3dim = ID3;
+uint32_t ID4dim = ID4;
+
+void setdimcol (){
+   for (int i = 0; i < DIMLVL; i++) { ID1dim = DimColor(ID1dim); }
+   for (int i = 0; i < DIMLVL; i++) { ID2dim = DimColor(ID2dim); }
+   for (int i = 0; i < DIMLVL; i++) { ID3dim = DimColor(ID3dim); }
+   for (int i = 0; i < DIMLVL; i++) { ID4dim = DimColor(ID4dim); }
+}
+#endif
 
 void FadeOut (byte red, byte green, byte blue){
   float r, g, b;
@@ -184,6 +210,21 @@ void setup() {
   leds.setPixelColor(0, leds.Color(0, 0, 255)); // Farbe Blau setzen
   leds.show(); //Anzeigen
   delay(1000); // warte 1s
+#ifdef NIGHTDIM
+  setdimcol ();
+  leds.setPixelColor(0, ID4dim); // Farbe Rot gedimmt setzen
+  leds.show(); //Anzeigen
+  delay(1000); // warte 1s
+  leds.setPixelColor(0, ID3dim); // Farbe Gelb gedimmt setzen
+  leds.show(); //Anzeigen
+  delay(1000); // warte 1s
+  leds.setPixelColor(0, ID1dim); // Farbe Grün gedimmt setzen
+  leds.show(); //Anzeigen
+  delay(1000); // warte 1s
+  leds.setPixelColor(0, leds.Color(0, 0, 31)); // Farbe Blau gedimmt setzen
+  leds.show(); //Anzeigen
+  delay(1000); // warte 1s
+#endif
 #endif
   leds.setPixelColor(0, leds.Color(0, 0, 255)); // Farbe Blau setzen zum Dimmen bei erfolglosen WLAN-Connect Versuchen
 
@@ -195,7 +236,7 @@ void setup() {
     leds.show();
   }
 
-  if(count < RETRIES){
+  if(WiFi.status() == WL_CONNECTED){
 #ifdef SERDEBUG
     Serial.println("WiFi connected");
     Serial.print("WIFI >> IP address: ");
@@ -235,7 +276,7 @@ void setup() {
   FadeOut ((byte) Red(color), (byte) Green(color), (byte) Blue(color));  // ausdimmen
   
   // erfolgreichen WiFi-Connect signalisieren -> blau dimmen
-  if(count < RETRIES){
+  if(WiFi.status() == WL_CONNECTED){
     leds.setPixelColor(0, color = leds.Color(0, 0, 250)); // Farbe Blau setzen
     leds.show(); //Anzeigen
     delay(1000); // warte 1s
@@ -247,32 +288,58 @@ void setup() {
 }
   
 void loop() {
+#ifdef NIGHTDIM
+    if (CE.locIsDST(CE.toLocal(now(), &tcr))) { // Daylight Saving Time ?
+       tzo = 2;
+       dst = true;
+    }
+    Dusk2Dawn myPlace(LATITUDE, LONGITUDE, tzo); // für exakte Dämmerungszeiten müssen die Geokoordinaten oben angepasst werden
+#endif
+
 //  int co2 = 400;   // bisheriger co2 Messwert
   co2 = co2ppm();  // MH-Z19B Sensor auslesen
   
   // CO2-Ampel
-  if(co2 > 1900){                           // ID4 sehr niedrig => rot blinken
+  if(co2 > (1900 - TRIGOFF)){                           // ID4 sehr niedrig => rot blinken
     leds.setPixelColor(0, color = ID4);     // Rot für CO2-Ampel niedrige Raumluftqualität = ID4
+#ifdef NIGHTDIM
+    if (isNight()) {leds.setPixelColor(0, color = ID4dim);} // gedimmtes Rot bei Nacht
+#endif
     leds.show();   //Anzeigen
     for (int i = 0; i <= 10; i++) {
       FadeOutIn ((byte) Red(color), (byte) Green(color), (byte) Blue(color)); // Farbe Rot Fade out/Fade in
       delay(1000); // warte 1s
     }
   }
-  else if(co2 > 1400){            // ID4 niedrig => rot
+  else if(co2 > (1400 - TRIGOFF)){            // ID4 niedrig => rot
     leds.setPixelColor(0, ID4);   // Rot für CO2-Ampel niedrige Raumluftqualität = ID4
+#ifdef NIGHTDIM
+    if (isNight()) {leds.setPixelColor(0, ID4dim);} // Gedimmtes rot bei Nacht
+#endif
   }
-  else if(co2 >= 1000){           // ID3 mäßig => gelb
+  else if(co2 >= (1000 - TRIGOFF)){           // ID3 mäßig => gelb
     leds.setPixelColor(0, ID3);   // Gelb für CO2-Ampel mäßige Raumluftqualität = ID3
+#ifdef NIGHTDIM
+    if (isNight()) {leds.setPixelColor(0, ID3dim);} // Gedimmtes gelb bei Nacht
+#endif
   }
-  else if(co2 >= 800){            // ID2 mittel => hellgrün
+  else if(co2 >= (800 - TRIGOFF)){            // ID2 mittel => hellgrün
     leds.setPixelColor(0, ID2);   // Hellgrün für CO2-Ampel mittlere Raumluftqualität = ID2
+#ifdef NIGHTDIM
+    if (isNight()) {leds.setPixelColor(0, ID2dim);} // Gedimmtes hellgrün bei Nacht
+#endif
   }
   else if(co2 >= 400) {           // ID1 gut => grün
     leds.setPixelColor(0, ID1);   // Grün für CO2-Ampel hohe Raumluftqualität = ID1
+#ifdef NIGHTDIM
+    if (isNight()) {leds.setPixelColor(0, ID1dim);} // Gedimmtes grün bei Nacht
+#endif
 #ifdef MWK
     if (temperature <= (COLD - MWK)){
       leds.setPixelColor(0, leds.Color(0, 0, 250));   // Blau für CO2-Ampel kalter Raum, hohe Raumluftqualität = ID1
+#ifdef NIGHTDIM
+      if (isNight()) {leds.setPixelColor(0, leds.Color(0, 0, 31));} // Gedimmtes blau bei Nacht
+#endif
     }
 #endif
   } else {
@@ -284,7 +351,7 @@ void loop() {
   }
   leds.show(); //Anzeigen
   
-  if(count < RETRIES){                       // nur Messdaten senden, wenn erfolgreich WiFi
+  if(WiFi.status() == WL_CONNECTED){                       // nur Messdaten senden, wenn erfolgreich per WiFi verbunden
     // Werte des MH-Z19B Sensors ausgelesen => Signalisierung an PITS-Server
     time_t t = CE.toLocal(now(), &tcr);      // Store the current local time in time variable t
 //    time_t t = now();                      // Store the current time in time variable t
@@ -330,6 +397,15 @@ void loop() {
   delay(Intervall); // Abstand zwischen den Messungen
 }
 
+bool isNight() {
+   time_t t = CE.toLocal(now(), &tcr);   // Store the current local time in time variable t
+   int Sunrise = myPlace.sunrise(year(t), month(t), day(t), dst);     // Sonnenaufgang
+   int Sunset  = myPlace.sunset(year(t), month(t), day(t), dst);      // Sonnenuntergang
+   int elapsedMins = (60 * hour(t)) + minute(t);                      // minutes elapsed since midnight
+   if (elapsedMins < Sunrise || elapsedMins > Sunset) {return true;}  // es ist Nacht!
+   return false;                                                      // ansonsten Tag...
+}
+
 int co2ppm() {         // original code @ https://github.com/jehy/arduino-esp8266-mh-z19-serial
   static byte cmd[9] = {0xFF, 0x01, 0x86, 0x00, 0x00, 0x00, 0x00, 0x00, 0x79};  // Befehl zum Abfragen des Sensors
   static byte response[9] = {0};                                                // Response-Buffer mit 0-Bytes initialisieren
@@ -372,7 +448,7 @@ int co2ppm() {         // original code @ https://github.com/jehy/arduino-esp826
     if (response[8] == crc) { // Checksummen stimmen überein => CO2-Konzentration bestimmen
       unsigned int responseHigh = (unsigned int) response[2];
       unsigned int responseLow = (unsigned int) response[3];
-      temperature = (unsigned int) response[4] - 40;
+      temperature = -40 + (unsigned int) response[4];
       return (256 * responseHigh) + responseLow;
     } else {
       return co2;             // alter Messwert
@@ -437,8 +513,11 @@ bool startWiFi(void) {
   Serial.println(WLAN_PASSPHRASE);
 #endif
 
-  WiFi.persistent(false); // Reduces flash access, memory wearing
-  WiFi.mode(WIFI_STA);    // Explicitly set the ESP8266 to be a WiFi-client
+  WiFi.persistent(false);  // Reduces flash access, memory wearing
+  WiFi.mode(WIFI_STA);     // Explicitly set the ESP8266 to be a WiFi-client
+#ifdef HOSTNAME
+  WiFi.hostname(HOSTNAME); // Hostname 4 this ESP8266
+#endif
 
   if (WiFi.begin(WLAN_SSID, WLAN_PASSPHRASE) != WL_CONNECTED) {
 #ifdef SERDEBUG
