@@ -16,8 +16,8 @@
  *                                                                          *
  *  Homepage: http://pits.TGD-Consulting.de                                 *
  *                                                                          *
- *  Version 0.8.0                                                           *
- *  Datum 15.11.2020                                                        *
+ *  Version 0.8.1                                                           *
+ *  Datum 17.11.2020                                                        *
  *                                                                          *
  *  (C) 2020 TGD-Consulting , Author: Dirk Weyand                           *
  ****************************************************************************/
@@ -74,9 +74,9 @@ int co2 = 400;                            // bisheriger co2 Messwert
 int temperature = 25;                     // Temperatur des MH-Z19B
 int tzo = 1;                              // time zone offset in hours from UTC
 bool dst = false;                         // normal time = No Daylight Saving Time 
-uint32_t ID1 = leds.Color(0, 250, 0);   // RGB Farbe Grün für CO2-Ampel hohe Raumluftqualität
-uint32_t ID2 = leds.Color(140, 240, 21);   // RGB Farbe Hellgrün für CO2-Ampel mittlere Raumluftqualität
-uint32_t ID3 = leds.Color(240, 220, 21);  // RGB Farbe Gelb für CO2-Ampel mäßige Raumluftqualität
+uint32_t ID1 = leds.Color(0, 250, 0);     // RGB Farbe Grün für CO2-Ampel hohe Raumluftqualität
+uint32_t ID2 = leds.Color(140, 240, 0);   // RGB Farbe Hellgrün für CO2-Ampel mittlere Raumluftqualität
+uint32_t ID3 = leds.Color(240, 220, 0);   // RGB Farbe Gelb für CO2-Ampel mäßige Raumluftqualität
 uint32_t ID4 = leds.Color(250, 0, 0);     // RGB Farbe Rot für CO2-Ampel niedrige Raumluftqualität
 
 //Central European Time (Berlin, Paris)
