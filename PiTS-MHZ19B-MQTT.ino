@@ -18,7 +18,7 @@
  *                                                                          *
  *  Homepage: http://pits.TGD-Consulting.de                                 *
  *                                                                          *
- *  Version 0.3.3                                                           *
+ *  Version 0.4.0                                                           *
  *  Datum 01.01.2021                                                        *
  *                                                                          *
  *  (C) 2021 TGD-Consulting , Author: Dirk Weyand                           *
@@ -76,8 +76,7 @@ PubSubClient client(espClient);
 uint8_t count;  // Zähler für WiFi-Connect Versuche
 uint32_t color; // 'Packed' 32-bit RGB Pixelcolor
 int Intervall = MINUTEN * 60 * 1000;      // Messinterval
-int idle = Intervall / 5000;              // Anzahl 5Sekunden Sleeps bis zur Messung
-int d = idle;                              // Wenn d größer als idle erfolgt Messung
+unsigned long lastMsg = 0;                // Zeitstempel der letzten Messung
 int co2 = 400;                            // bisheriger co2 Messwert
 int temperature = 25;                     // Temperatur des MH-Z19B
 int tzo = 1;                              // time zone offset in hours from UTC
@@ -86,9 +85,6 @@ uint32_t ID1 = leds.Color(0, 250, 0);     // RGB Farbe Grün für CO2-Ampel hohe
 uint32_t ID2 = leds.Color(140, 240, 0);   // RGB Farbe Hellgrün für CO2-Ampel mittlere Raumluftqualität
 uint32_t ID3 = leds.Color(240, 220, 0);   // RGB Farbe Gelb für CO2-Ampel mäßige Raumluftqualität
 uint32_t ID4 = leds.Color(250, 0, 0);     // RGB Farbe Rot für CO2-Ampel niedrige Raumluftqualität
-
-// Used as random MQTT-client ID
-String clientId = String(HOSTNAME);
 
 //Central European Time (Berlin, Paris)
 TimeChangeRule CEST = {"CEST", Last, Sun, Mar, 2, 120};    //Central European Summer Time = UTC + 2 hours
@@ -172,12 +168,12 @@ void reconnect() {
         Serial.print("Reconnecting...");
 #endif
         // Create a random MQTT-client ID
-       clientId = String(HOSTNAME);
+       String clientId = String(HOSTNAME);
        clientId += "-";
        clientId += String(random(0xffff), HEX);
-       if (client.connect(clientId.c_str())) {                                                  // ReConnect with random MQTT-client ID
+       if (client.connect(clientId.c_str())) {                                        // ReConnect with random MQTT-client ID
 #ifdef CONNECTEST
-          client.publish("home/PiTS/MQTT/CO2-Ampel/reconnect/ESPclient", clientId.c_str());     // Once reconnected, publish an announcement 4 test...  
+          client.publish("home/PiTS/MQTT/CO2-Ampel/ESPclient", clientId.c_str());     // Once reconnected, publish an announcement 4 test...  
 #endif
        } else {
 #ifdef SERDEBUG 
@@ -185,7 +181,7 @@ void reconnect() {
             Serial.print(client.state());
             Serial.println(" retrying in 5 seconds");
 #endif
-            delay(5000);
+            delay(5000);   // Wait 5 seconds before retrying
        }
     }
 }
@@ -277,7 +273,9 @@ void setup() {
     Serial.print("WIFI >> IP address: ");
     Serial.println(WiFi.localIP());
 #endif
-        
+
+    randomSeed(micros()); // "zufälligen" Salt für RNG bestimmen
+    
     NTPclient.begin(NTP_SERVER, PST);
     setSyncProvider(getNTPtime);
     setSyncInterval(SECS_PER_HOUR);  // jede Stunde aktualisieren
@@ -290,6 +288,10 @@ void setup() {
   Serial.end();
 #endif
 
+  //rote LED des ESP ausschalten
+  pinMode(BUILTIN_LED, OUTPUT);     // Initialize the BUILTIN_LED pin as an output
+  digitalWrite(BUILTIN_LED, HIGH);  // Turn the LED off by making the voltage HIGH
+  
   Serial.begin(9600);      // richtige Geschwindigkeit der seriellen Schnittstelle für MH-Z19B setzen
 
   // Ampel Farben durchlaufen = gleich geht's los mit der Messung 
@@ -322,17 +324,6 @@ void setup() {
     leds.show(); //Anzeigen
     delay(1000); // warte 1s
     FadeOut ((byte) Red(color), (byte) Green(color), (byte) Blue(color));  // ausdimmen
-
-    // Create a random MQTT-client ID
-    clientId = String(HOSTNAME);
-    clientId += "-";
-    clientId += String(random(0xffff), HEX);
-
-    if (client.connect(clientId.c_str())) {                                        // initial Connect with random MQTT-client ID
-#ifdef CONNECTEST
-       client.publish("home/PiTS/MQTT/CO2-Ampel/ESPclient", clientId.c_str());     // Once connected, publish an announcement 4 test...  
-#endif
-    }
   }
   
   leds.clear();            // alle LEDs ausschalten
@@ -348,11 +339,50 @@ void loop() {
     Dusk2Dawn myPlace(LATITUDE, LONGITUDE, tzo); // für exakte Dämmerungszeiten müssen die Geokoordinaten oben angepasst werden
 #endif
 
-  d++;             // d inkrementieren
-
-  if (d > idle) {  // Falls d größer idle => Messung durchführen
-  co2 = co2ppm();  // MH-Z19B Sensor auslesen
+  if(WiFi.status() == WL_CONNECTED){             // nur Messdaten senden, wenn erfolgreich per WiFi verbunden
+    if (!client.connected()) {
+      reconnect();
+    }
+    client.loop();                    // MQTT-Verbindung aufrecht erhalten (PingREQ alle 15s bzw. entsprechend KeepAlive)
+  }
   
+  unsigned long jetzt = millis();
+  
+  if (jetzt - lastMsg > Intervall) {  // Falls Zeitpunkt der letzten Mesung größer als Messintervall => Messung durchführen
+    lastMsg = jetzt;
+    co2 = co2ppm();  // MH-Z19B Sensor auslesen
+
+    if(WiFi.status() == WL_CONNECTED){         // nur Messdaten senden, wenn erfolgreich per WiFi verbunden
+      // Werte des MH-Z19B Sensors ausgelesen => Signalisierung an PITS-Server über MQTT-Broker
+      time_t t = CE.toLocal(now(), &tcr);      // Store the current local time in time variable t
+//      time_t t = now();                      // Store the current time in time variable t
+      String DateTimeString = String(day(t), DEC) + "-" + String(month(t), DEC) + "-" + String(year(t), DEC);
+      DateTimeString = DateTimeString + "/" + String(hour(t), DEC) + ":" + String(minute(t), DEC) + ":" + String(second(t), DEC);
+        
+    // Messwert übertragen
+    if (client.connected()) {    
+       // We now create the message for the request
+       String msg = "";
+       msg += co2;
+       msg += " ";
+       msg += temperature;
+       if (timeStatus() != timeNotSet) { // Falls Zeit synchron zum NTP-Server, Zeitpunkt übermitteln
+         msg += " ";
+         msg += DateTimeString;        // im REBOL Time-Format
+       }
+       msg += " ";
+       msg += uptime();
+
+#ifdef SERDEBUG
+       Serial.print("PITS >> MQTT   >> Publish Payload: ");
+       Serial.println(msg);
+#endif
+    
+       // This will send the request to the broker
+       client.publish(MQTT_TOPIC, msg.c_str());
+    }
+    }
+    
   // CO2-Ampel
   if(co2 > (1900 - TRIGOFF)){                           // ID4 sehr niedrig => rot blinken
     leds.setPixelColor(0, color = ID4);     // Rot für CO2-Ampel niedrige Raumluftqualität = ID4
@@ -396,56 +426,20 @@ void loop() {
 #endif
     }
 #endif
-  } else {
+  } else {   // Ausnahmezustand signalisieren => Ampel aus, ESP LED an 
     yield();
     leds.clear();            // alle LEDs ausschalten
     leds.show(); //Anzeigen
+    digitalWrite(BUILTIN_LED, LOW);   // Turn the LED on (Note that LOW is the voltage level
     delay(5000); // warte 5s
+    digitalWrite(BUILTIN_LED, HIGH);  // Turn the LED off by making the voltage HIGH
     return;
   }
   leds.show(); //Anzeigen
   
-  if(WiFi.status() == WL_CONNECTED){                       // nur Messdaten senden, wenn erfolgreich per WiFi verbunden
-    // Werte des MH-Z19B Sensors ausgelesen => Signalisierung an PITS-Server
-    time_t t = CE.toLocal(now(), &tcr);      // Store the current local time in time variable t
-//    time_t t = now();                      // Store the current time in time variable t
-    String DateTimeString = String(day(t), DEC) + "-" + String(month(t), DEC) + "-" + String(year(t), DEC);
-    DateTimeString = DateTimeString + "/" + String(hour(t), DEC) + ":" + String(minute(t), DEC) + ":" + String(second(t), DEC);
-        
-    if (client.connected()) {    
-    // We now create the message for the request
-    String msg = "";
-    msg += co2;
-    msg += " ";
-    msg += temperature;
-    if (timeStatus() != timeNotSet) { // Falls Zeit synchron zum NTP-Server, Zeitpunkt übermitteln
-      msg += " ";
-      msg += DateTimeString;        // im REBOL Time-Format
-    }
-    msg += " ";
-    msg += uptime();
+  }
 
-    
-#ifdef SERDEBUG
-    Serial.print("PITS >> MQTT   >> Publish Payload: ");
-    Serial.println(msg);
-#endif
-    
-    // This will send the request to the broker
-    client.publish(MQTT_TOPIC, msg.c_str());
-    } else {
-#ifdef SERDEBUG
-      Serial.println("PITS >> MQTT   >> connection failed");
-#endif
-      reconnect();
-    }
-  }
-  d = 1;            // d zurücksetzen
-  }
-  
-  client.loop();    // MQTT-Verbindung aufrecht erhalten (PingREQ alle 15s KeepAlive) 
-  
-  delay(5000);      // Warte 5 Sekunden
+  delay(1000);      // Warte 1 Sekunde
 }
 
 bool isNight() {
@@ -487,8 +481,10 @@ int co2ppm() {         // original code @ https://github.com/jehy/arduino-esp826
  //     delay(1000); // warte 1s
  //   }
  //   return -1;               // Abbruch
+    digitalWrite(BUILTIN_LED, LOW);   // Turn the LED on (Note that LOW is the voltage level
     return co2;              // alten Messwert zurückliefern
   } else {
+    digitalWrite(BUILTIN_LED, HIGH);  // Turn the LED off by making the voltage HIGH
     // Checksumme berechnen
     byte crc = 0;  
     for (int i = 1; i < 8; i++) {
