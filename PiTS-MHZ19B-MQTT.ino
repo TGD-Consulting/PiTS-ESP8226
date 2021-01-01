@@ -18,7 +18,7 @@
  *                                                                          *
  *  Homepage: http://pits.TGD-Consulting.de                                 *
  *                                                                          *
- *  Version 0.3.2                                                           *
+ *  Version 0.3.3                                                           *
  *  Datum 01.01.2021                                                        *
  *                                                                          *
  *  (C) 2021 TGD-Consulting , Author: Dirk Weyand                           *
@@ -312,8 +312,10 @@ void setup() {
   
   // erfolgreichen WiFi-Connect signalisieren -> blau dimmen
   if(WiFi.status() == WL_CONNECTED){
+#ifdef MQTT_KEEPALIVE
     client.setKeepAlive (MQTT_KEEPALIVE);      // KeepAlive 4 Connection
     client.setSocketTimeout(MQTT_KEEPALIVE);   // TCP-Socket Timeout
+#endif    
     client.setServer(MQTT_BROKER, MQTT_PORT);  // Connection zum MQTT Broker herstellen
 
     leds.setPixelColor(0, color = leds.Color(0, 0, 250)); // Farbe Blau setzen
