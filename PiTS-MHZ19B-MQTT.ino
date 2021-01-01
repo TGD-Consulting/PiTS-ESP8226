@@ -18,7 +18,7 @@
  *                                                                          *
  *  Homepage: http://pits.TGD-Consulting.de                                 *
  *                                                                          *
- *  Version 0.2.0                                                           *
+ *  Version 0.3.0                                                           *
  *  Datum 01.01.2021                                                        *
  *                                                                          *
  *  (C) 2020 TGD-Consulting , Author: Dirk Weyand                           *
@@ -42,6 +42,7 @@
 #define NUMPIXELS 1      // Anzahl der am PIN angeschlossenen WS2812B (eine LED ausreichend für einfache CO2-Ampel)
 #define BRIGHTNESS 200   // Helligkeit der LEDs (0 dunkel -> 255 ganz hell)
 #define STRIPTEST 1      // LEDs beim Setup testen, auskommentiert = kein Test
+#define CONNECTEST 1     // Publish Message nach MQTT-Connect, auskommentiert = kein Test-Announcement
 #define MINUTEN 2        // Abtastrate, Anzahl Minuten bis zur nächsten Datenübermittlung
 #define TRIGOFF 0        // Trigger Offset (0|100|200) für früheren Wechsel der Ampelfarben, bei 0 Schwellwerte gemäß DIN EN 13779
 #define COLD 16          // Schwellwert unterhalb der die Raumtemperatur als unterkühlt/kalt gilt
@@ -173,14 +174,18 @@ void reconnect() {
        clientId = String(HOSTNAME);
        clientId += "-";
        clientId += String(random(0xffff), HEX);
-       if (!client.connect(clientId.c_str())) {
+       if (client.connect(clientId.c_str())) {                                                  // ReConnect with random MQTT-client ID
+#ifdef CONNECTEST
+          client.publish("home/PiTS/MQTT/CO2-Ampel/ESPclient/reconnect", clientId.c_str());     // Once reconnected, publish an announcement 4 test...  
+#endif
+       } else {
 #ifdef SERDEBUG 
             Serial.print("failed, rc=");
             Serial.print(client.state());
             Serial.println(" retrying in 5 seconds");
 #endif
             delay(5000);
-        }
+       }
     }
 }
 
@@ -306,19 +311,23 @@ void setup() {
   
   // erfolgreichen WiFi-Connect signalisieren -> blau dimmen
   if(WiFi.status() == WL_CONNECTED){
+    client.setServer(MQTT_BROKER, MQTT_PORT);  // Connection zum MQTT Broker herstellen
+
     leds.setPixelColor(0, color = leds.Color(0, 0, 250)); // Farbe Blau setzen
     leds.show(); //Anzeigen
     delay(1000); // warte 1s
     FadeOut ((byte) Red(color), (byte) Green(color), (byte) Blue(color));  // ausdimmen
-
-    client.setServer(MQTT_BROKER, MQTT_PORT);  // Connection zum MQTT Broker herstellen
 
     // Create a random MQTT-client ID
     clientId = String(HOSTNAME);
     clientId += "-";
     clientId += String(random(0xffff), HEX);
 
-    client.connect(clientId.c_str());          // initial Connect with random MQTT-client ID
+    if (client.connect(clientId.c_str())) {                                        // initial Connect with random MQTT-client ID
+#ifdef CONNECTEST
+       client.publish("home/PiTS/MQTT/CO2-Ampel/ESPclient", clientId.c_str());     // Once connected, publish an announcement 4 test...  
+#endif
+    }
   }
   
   leds.clear();            // alle LEDs ausschalten
