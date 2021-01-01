@@ -18,8 +18,8 @@
  *                                                                          *
  *  Homepage: http://pits.TGD-Consulting.de                                 *
  *                                                                          *
- *  Version 0.4.0                                                           *
- *  Datum 01.01.2021                                                        *
+ *  Version 0.4.1                                                           *
+ *  Datum 02.01.2021                                                        *
  *                                                                          *
  *  (C) 2021 TGD-Consulting , Author: Dirk Weyand                           *
  ****************************************************************************/
@@ -181,7 +181,10 @@ void reconnect() {
             Serial.print(client.state());
             Serial.println(" retrying in 5 seconds");
 #endif
-            delay(5000);   // Wait 5 seconds before retrying
+            digitalWrite(BUILTIN_LED, LOW);   // Turn the LED on (Note that LOW is the voltage level)
+            delay(3000); // warte 3s
+            digitalWrite(BUILTIN_LED, HIGH);  // Turn the LED off by making the voltage HIGH
+            delay(2000);   // Wait 5 seconds totally before retrying
        }
     }
 }
