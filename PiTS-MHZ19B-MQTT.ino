@@ -18,10 +18,10 @@
  *                                                                          *
  *  Homepage: http://pits.TGD-Consulting.de                                 *
  *                                                                          *
- *  Version 0.3.1                                                           *
+ *  Version 0.3.2                                                           *
  *  Datum 01.01.2021                                                        *
  *                                                                          *
- *  (C) 2020 TGD-Consulting , Author: Dirk Weyand                           *
+ *  (C) 2021 TGD-Consulting , Author: Dirk Weyand                           *
  ****************************************************************************/
 
 /*************************
@@ -35,6 +35,7 @@
 #define MQTT_BROKER        "broker.hivemq.com"           // MQTT Broker URI oder IP
 #define MQTT_PORT          1883                          // Standard MQTT Port
 #define MQTT_TOPIC         "home/PiTS/CO2-Ampel/1234"    // TOPIC der Publish-Message, check @ http://www.hivemq.com/demos/websocket-client/
+#define MQTT_KEEPALIVE     30                            // 30 Sekunden Timeout/KeepAlive der MQTT Verbindung 
 #define NTP_SERVER         "192.168.0.1"                 // set your local NTP-Server here, or eg. "ptbtime2.ptb.de"
 #define PST 0            // GMT/UTC - Anpassung an lokale Sommer/Winterzeit erfolgt über Timezone Library
 //#define SERDEBUG 1       // Debug-Infos über Serielle Schnittstelle senden, auskommentiert = Debugging OFF  
@@ -311,6 +312,8 @@ void setup() {
   
   // erfolgreichen WiFi-Connect signalisieren -> blau dimmen
   if(WiFi.status() == WL_CONNECTED){
+    client.setKeepAlive (MQTT_KEEPALIVE);      // KeepAlive 4 Connection
+    client.setSocketTimeout(MQTT_KEEPALIVE);   // TCP-Socket Timeout
     client.setServer(MQTT_BROKER, MQTT_PORT);  // Connection zum MQTT Broker herstellen
 
     leds.setPixelColor(0, color = leds.Color(0, 0, 250)); // Farbe Blau setzen
