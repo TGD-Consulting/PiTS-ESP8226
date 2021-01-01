@@ -18,7 +18,7 @@
  *                                                                          *
  *  Homepage: http://pits.TGD-Consulting.de                                 *
  *                                                                          *
- *  Version 0.3.0                                                           *
+ *  Version 0.3.1                                                           *
  *  Datum 01.01.2021                                                        *
  *                                                                          *
  *  (C) 2020 TGD-Consulting , Author: Dirk Weyand                           *
@@ -176,7 +176,7 @@ void reconnect() {
        clientId += String(random(0xffff), HEX);
        if (client.connect(clientId.c_str())) {                                                  // ReConnect with random MQTT-client ID
 #ifdef CONNECTEST
-          client.publish("home/PiTS/MQTT/CO2-Ampel/ESPclient/reconnect", clientId.c_str());     // Once reconnected, publish an announcement 4 test...  
+          client.publish("home/PiTS/MQTT/CO2-Ampel/reconnect/ESPclient", clientId.c_str());     // Once reconnected, publish an announcement 4 test...  
 #endif
        } else {
 #ifdef SERDEBUG 
