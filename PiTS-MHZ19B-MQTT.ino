@@ -18,8 +18,8 @@
  *                                                                          *
  *  Homepage: http://pits.TGD-Consulting.de                                 *
  *                                                                          *
- *  Version 0.1.0                                                           *
- *  Datum 30.12.2020                                                        *
+ *  Version 0.2.0                                                           *
+ *  Datum 01.01.2021                                                        *
  *                                                                          *
  *  (C) 2020 TGD-Consulting , Author: Dirk Weyand                           *
  ****************************************************************************/
@@ -84,6 +84,9 @@ uint32_t ID1 = leds.Color(0, 250, 0);     // RGB Farbe Grün für CO2-Ampel hohe
 uint32_t ID2 = leds.Color(140, 240, 0);   // RGB Farbe Hellgrün für CO2-Ampel mittlere Raumluftqualität
 uint32_t ID3 = leds.Color(240, 220, 0);   // RGB Farbe Gelb für CO2-Ampel mäßige Raumluftqualität
 uint32_t ID4 = leds.Color(250, 0, 0);     // RGB Farbe Rot für CO2-Ampel niedrige Raumluftqualität
+
+// Used as random MQTT-client ID
+String clientId = String(HOSTNAME);
 
 //Central European Time (Berlin, Paris)
 TimeChangeRule CEST = {"CEST", Last, Sun, Mar, 2, 120};    //Central European Summer Time = UTC + 2 hours
@@ -166,7 +169,11 @@ void reconnect() {
 #ifdef SERDEBUG      
         Serial.print("Reconnecting...");
 #endif
-        if (!client.connect(HOSTNAME)) {
+        // Create a random MQTT-client ID
+       clientId = String(HOSTNAME);
+       clientId += "-";
+       clientId += String(random(0xffff), HEX);
+       if (!client.connect(clientId.c_str())) {
 #ifdef SERDEBUG 
             Serial.print("failed, rc=");
             Serial.print(client.state());
@@ -305,6 +312,13 @@ void setup() {
     FadeOut ((byte) Red(color), (byte) Green(color), (byte) Blue(color));  // ausdimmen
 
     client.setServer(MQTT_BROKER, MQTT_PORT);  // Connection zum MQTT Broker herstellen
+
+    // Create a random MQTT-client ID
+    clientId = String(HOSTNAME);
+    clientId += "-";
+    clientId += String(random(0xffff), HEX);
+
+    client.connect(clientId.c_str());          // initial Connect with random MQTT-client ID
   }
   
   leds.clear();            // alle LEDs ausschalten
