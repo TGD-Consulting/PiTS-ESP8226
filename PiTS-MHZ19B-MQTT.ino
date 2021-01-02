@@ -18,7 +18,7 @@
  *                                                                          *
  *  Homepage: http://pits.TGD-Consulting.de                                 *
  *                                                                          *
- *  Version 0.4.1                                                           *
+ *  Version 0.4.2                                                           *
  *  Datum 02.01.2021                                                        *
  *                                                                          *
  *  (C) 2021 TGD-Consulting , Author: Dirk Weyand                           *
@@ -48,7 +48,7 @@
 #define TRIGOFF 0        // Trigger Offset (0|100|200) für früheren Wechsel der Ampelfarben, bei 0 Schwellwerte gemäß DIN EN 13779
 #define COLD 16          // Schwellwert unterhalb der die Raumtemperatur als unterkühlt/kalt gilt
 #define NIGHTDIM 1       // Nacht-Modus aktiv, LED wird nach Sonnenuntergang gedimmt, zum Deaktiveren auskommentieren
-#define DIMLVL 3         // Dimm-Level (je größer desto dunkler leuchtet die LED im Nacht-Modus)
+#define DIMLVL 5         // Dimm-Level (je größer desto dunkler leuchtet die LED im Nacht-Modus)
 #define LONGITUDE 9.760  // Position Längengrad muss angepasst werden, damit Dämmerungzeiten für den Standort stimmen
 #define LATITUDE 54.644  // Position Breitengrad muss angepasst werden, damit Dämmerungzeiten für den Standort stimmen
 //#define MWK -8           // Messwertkorrektur damit die Temperatur im Sensor mit Raumtemperatur übereinstimmt, Kommentar entfernen, damit die Ampel blau leuchtet, bei zu kalten Räumen mit hoher Raumluftqualität (ID1)
@@ -181,10 +181,7 @@ void reconnect() {
             Serial.print(client.state());
             Serial.println(" retrying in 5 seconds");
 #endif
-            digitalWrite(BUILTIN_LED, LOW);   // Turn the LED on (Note that LOW is the voltage level)
-            delay(3000); // warte 3s
-            digitalWrite(BUILTIN_LED, HIGH);  // Turn the LED off by making the voltage HIGH
-            delay(2000);   // Wait 5 seconds totally before retrying
+            delay(5000);   // Wait 5 seconds totally before retrying
        }
     }
 }
@@ -290,10 +287,6 @@ void setup() {
   Serial.flush();
   Serial.end();
 #endif
-
-  //rote LED des ESP ausschalten
-  pinMode(BUILTIN_LED, OUTPUT);     // Initialize the BUILTIN_LED pin as an output
-  digitalWrite(BUILTIN_LED, HIGH);  // Turn the LED off by making the voltage HIGH
   
   Serial.begin(9600);      // richtige Geschwindigkeit der seriellen Schnittstelle für MH-Z19B setzen
 
@@ -433,9 +426,7 @@ void loop() {
     yield();
     leds.clear();            // alle LEDs ausschalten
     leds.show(); //Anzeigen
-    digitalWrite(BUILTIN_LED, LOW);   // Turn the LED on (Note that LOW is the voltage level
     delay(5000); // warte 5s
-    digitalWrite(BUILTIN_LED, HIGH);  // Turn the LED off by making the voltage HIGH
     return;
   }
   leds.show(); //Anzeigen
@@ -484,10 +475,8 @@ int co2ppm() {         // original code @ https://github.com/jehy/arduino-esp826
  //     delay(1000); // warte 1s
  //   }
  //   return -1;               // Abbruch
-    digitalWrite(BUILTIN_LED, LOW);   // Turn the LED on (Note that LOW is the voltage level
     return co2;              // alten Messwert zurückliefern
   } else {
-    digitalWrite(BUILTIN_LED, HIGH);  // Turn the LED off by making the voltage HIGH
     // Checksumme berechnen
     byte crc = 0;  
     for (int i = 1; i < 8; i++) {
