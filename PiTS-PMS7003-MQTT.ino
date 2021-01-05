@@ -18,7 +18,7 @@
  *                                                                          *
  *  Homepage: http://pits.TGD-Consulting.de                                 *
  *                                                                          *
- *  Version 0.1.0                                                           *
+ *  Version 0.1.1                                                           *
  *  Datum 05.01.2021                                                        *
  *                                                                          *
  *  (C) 2021 TGD-Consulting , Author: Dirk Weyand                           *
@@ -417,6 +417,16 @@ void loop() {
        msg += AQI;
        msg += " ";
        msg += PM1;
+       msg += " ";
+       msg += PM25;
+       msg += " ";
+       msg += PM10;
+       msg += " ";
+       msg += nPM1;
+       msg += " ";
+       msg += nPM25;
+       msg += " ";
+       msg += nPM10;
        if (timeStatus() != timeNotSet) { // Falls Zeit synchron zum NTP-Server, Zeitpunkt übermitteln
          msg += " ";
          msg += DateTimeString;        // im REBOL Time-Format
